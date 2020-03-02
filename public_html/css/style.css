@@ -1,0 +1,106 @@
+/*
+Theme Name: basichackerspacesnl
+Description: Custom child theme for hackerspaces
+Version: 1.0.1
+Author:Dave Borghuis aka zeno4ever
+Author URI: http://daveborghuis.nl/
+Text Domain: basic-child
+Template: basic
+*/
+body {
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    float: left;
+}
+
+/* For all navagation */
+
+nav {
+    position: fixed;
+    height: 50px;
+    top: 0;
+    right: 0;
+    left: 0;
+}
+
+.menu ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #333;
+  color: #111;
+}
+
+.menu li {
+  float: left;
+}
+
+.menu li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* Change the link color to #111 (black) on hover */
+.menu li a:hover {
+  background-color: #111;
+}
+
+/* Legend on footer of page*/
+
+.legend {
+  height: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  padding-left: 50px;
+  position: fixed;
+  left: 0;
+  bottom: 0px;
+  width: 100%;
+  background-color: #444;
+  color: white;
+}
+
+.legend ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  color: #fff;
+}
+
+.legend li {
+  float: left;
+}
+
+.legend li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+/* icon image is 30px - 70px*/
+.legend img { 
+  position: absolute;
+  height: 50px;
+  float: left;
+}
+
+/* https://jsfiddle.net/agorshkov23/5osbcpyc/ */
+body > div.container {
+    position: fixed;
+    top: calc(40px + 1em);
+    bottom: calc(40px + 1em);
+    right: 0;
+    left: 0;
+    vertical-align: top;
+}

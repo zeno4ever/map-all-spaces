@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Map all spaces</title>
+
+    <meta charset="UTF-8">
+
+    <!-- If IE use the latest rendering engine -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Set the page to the width of the device and set the zoon level -->
+    <meta name="viewport" content="width = device-width, initial-scale = 1">
+
+    <!-- jquery -->
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="http://unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
+    <script src="http://unpkg.com/leaflet@1.0.1/dist/leaflet.js"></script>
+    <!--script src="leaflet.featuregroup.subgroup.js"></script-->
+    <script src="https://unpkg.com/leaflet.featuregroup.subgroup@1.0.1/dist/leaflet.featuregroup.subgroup.js"></script>
+
+    <script src="/dist/spin.min.js" charset="utf-8"></script>
+    <script src="/dist/leaflet.spin.min.js" charset="utf-8"></script>
+
+    <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.Default.css">
+    <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.css">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+
+</head>
+<body>
+
+    <script src="https://cdn.rawgit.com/Leaflet/Leaflet.markercluster/v1.0.0-beta.2.0/dist/leaflet.markercluster.js"></script>
+
+    <div id="header">
+        <nav class="menu">
+            <ul >
+              <li><img src="/image/logo.png" height="50px"></li>
+              <li><a href="/" class="active">Home</a></li>
+              <li><a href="faq.html">FAQ</a></li>
+              <li style="float:right"><a href="about.html">About</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div id="map"></div>
+    </div>
+    <script>
+        //var map = L.map('map').setView([38.607, -97.277], 5);
+        var map = L.map('map').locate({setView: true, maxZoom: 8});
+
+        map.spin(true);
+
+        //attributes for basemap credit (lower right hand corner annotation)
+        var streetsAttr = 'Map tiles by Carto, under CC BY 3.0. Data by <a href="https://openstreetmap.org">OpenStreetMap</a>, under ODbL.';
+        var aerialAttr = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+
+        var streets = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',  { 
+            id: 'MapID', 
+            attribution: streetsAttr
+        }).addTo(map);
+
+         var aerial = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            id: 'MapID',
+            attribution: aerialAttr
+          });
+
+        //create baseMaps variable to store basemap layer switcher
+        var baseMaps = {
+          "Streets": streets,
+          "OSM": aerial,
+        };
+
+        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 8}).addTo(map);
+
+        var layerSpaceApi = L.featureGroup.subGroup(masClusGroup).addTo(map);
+        var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
+        var layerSpaceWiki = L.featureGroup.subGroup(masClusGroup).addTo(map);       
+
+
+        /*
+        //define arry for imporign all 
+        var  =  {
+            { '/hs.geojson',layerSpaceApi,5000}
+            { '/fablab.geojson',layerSpaceFablab,0}
+            { '/wiki.geojson',layerSpaceWiki,-5000}
+        } file , layer , zindex
+        // forecho ( arry as element) {
+            // import geojson and add layers
+        //}
+        */
+
+        //spaceapi
+        $.getJSON('/api.geojson', function(cartodbdata) {
+            geojsonlayer= L.geoJson(cartodbdata, {
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties.name) {
+                            var html = '<b>'+feature.properties.name+'</b><br/>'+
+                                feature.properties.address+'<br/>'+
+                                feature.properties.zip+' '+feature.properties.city+'<br/>'+
+                                "<a href='"+feature.properties.url+"' target='_blank' >website</a>  "+
+                                "<a href='"+feature.properties.source+"' target='_blank' >source</a><br/>"
+                            layer.bindPopup(html).addTo(layerSpaceApi);
+                        };
+                },
+                pointToLayer: function (feature, latlon) {
+                var iconurl = feature.properties['marker-symbol'];
+                return new L.Marker(latlon, {
+                    icon: new L.icon({
+                        iconUrl: iconurl,
+                        iconSize: [30, 70],
+                        iconAnchor: [15, 35],
+                        popupAnchor: [0, -25]
+                                               
+                    }),
+                    zIndexOffset: 5000
+                });
+            }
+            });
+         });
+
+
+        //fablab
+        $.getJSON('/fablab.geojson', function(cartodbdata) {
+            geojsonlayer= L.geoJson(cartodbdata, {
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties.name) {
+                            var html = '<b>'+feature.properties.name+'</b><br/>'+
+                                feature.properties.address+'<br/>'+
+                                feature.properties.zip+' '+feature.properties.city+'<br/>'+
+                                "<a href='"+feature.properties.url+"' target='_blank' >website</a>  "+
+                                "<a href='"+feature.properties.source+"' target='_blank' >source</a><br/>"
+                            layer.bindPopup(html).addTo(layerSpaceFablab);
+                        };
+                },
+                pointToLayer: function (feature, latlon) {
+                var iconurl = feature.properties['marker-symbol'];
+                return new L.Marker(latlon, {
+                    icon: new L.icon({
+                        iconUrl: iconurl,
+                        iconSize: [30, 70],
+                        iconAnchor: [15, 35],
+                        popupAnchor: [0, -25]
+                    })
+                });
+            }
+            });
+         });
+
+        //wiki
+        $.getJSON('/wiki.geojson', function(cartodbdata) {
+            geojsonlayer= L.geoJson(cartodbdata, {
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties.name) {
+                            var html = '<b>'+feature.properties.name+'</b><br/>'+
+                                feature.properties.address+'<br/>'+
+                                feature.properties.zip+' '+feature.properties.city+'<br/>'+
+                                "<a href='"+feature.properties.url+"' target='_blank' >website</a>  "+
+                                "<a href='"+feature.properties.source+"' target='_blank' >source</a><br/>"
+                            layer.bindPopup(html).addTo(layerSpaceWiki);
+                        };
+                },
+                pointToLayer: function (feature, latlon) {
+                var iconurl = feature.properties['marker-symbol'];
+                return new L.Marker(latlon, {
+                    icon: new L.icon({
+                        iconUrl: iconurl,
+                        iconSize: [30, 70],
+                        iconAnchor: [15, 35],
+                        popupAnchor: [0, -25]
+                    }),
+                    zIndexOffset: -3000,  
+                });
+            }
+            })/*.addTo(layerSpaceApi)*/;
+         });
+
+        $(document).ajaxComplete(function (event, xhr, settings) {
+            map.spin(false);
+        });
+
+        var overLayMap = {
+            "Hackerspace (SpaceAPI)": layerSpaceApi,
+            "FabLab.io": layerSpaceFablab,
+            "Hackerspace (wiki)": layerSpaceWiki,
+        };
+
+        L.control.layers(baseMaps, overLayMap).addTo(map);
+
+    </script>
+    <div class="legend">
+        <ul>
+        <ul>Legend :</ul>
+        <ul><img src="/image/hs.png" alt="source spaceapi">API</ul>
+        <ul><img src="/image/hs_open.png" alt="source spaceapi">API open</ul>
+        <ul><img src="/image/hs_closed.png" alt="source spaceapi">API closed</ul>
+
+        <ul><img src="/image/fablab.png" alt="source fablab.oi">Fablab</ul>
+        <ul><img src="/image/hs_black.png" alt="source wiki.hackerspaces.org">Wiki</ul>
+        </ul>
+    </div>
+
+
+</body>
+</html>

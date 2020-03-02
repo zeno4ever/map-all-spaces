@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+</head>
+<body>
+	<main id="content">
+		<link rel="stylesheet" href="/css/style.css" />
+		<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+	    <div id="header">
+	        <nav class="menu">
+	            <ul >
+	              <li><img src="/image/logo.png" height="50px"></li>
+	              <li><a href="/" class="active">Home</a></li>
+	              <li><a href="faq.html">FAQ</a></li>
+	              <li style="float:right"><a href="about.html">About</a></li>
+	            </ul>
+		     </nav>
+    	</div>
+		<div class="container">
+			<h1>FAQ</h1>
+			<h2>What is this site?</h2>
+			<div>A dynamic map of all hacker/maker spaces and fablabs. There is already some map out there, but you have to register. After a while the map wil be outdated, so for this map there are several 'live' souces used to be always uptodate. </div>
+			<h2>What sources are used?</h2>
+			<div>There are tree main sources of data :  
+				<ul>
+					<li><a href="https://spaceapi.io/">spaceapi</a> directory
+						<div>read status via json</div>
+					</li>
+					<li><a href="https://fablabs.io/">fablab.oi</a> labs list
+						<div>Fablab should have status 'active'</div>
+					</li>
+					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> symantic data<div>Extra checks if already done bij spaceapi, more then 1 members and if entry older then 3 years if site still up.</div></li>
+				</ul> 
+			</div>
+
+			<h2>Can i help you?</h2>
+			<div>Cool, thats nice of you. You could help me several ways :
+				<ul>
+					<li>Pay a small donation to cover cost of hosting etc.</li>
+					<li>If an entry is invalid (e.g. hackerspace close) edit this at the source.</li>			
+				</ul> 
+			</div>
+			<h2>Can you update my entry?</h2>
+			<div>I don't keep a database of your data, I update this every day from the mentioned datasources. If you want to see where I got your data from, click on your icon and select 'source'. That should bring you to the data source where you can change your data. Allow at least 24 hours to update on this map.
+			</div>
+		</div>
+		<div class="footer">Foooter</div>
+	</main>
+</body>
