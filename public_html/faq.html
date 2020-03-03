@@ -1,47 +1,52 @@
 <!DOCTYPE html>
 <html lang="en-US">
 <head>
+	<link rel="stylesheet" href="/css/style.css" />
+	<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+	<title>Map all spaces - FAQ</title>
 </head>
+
 <body>
+    <div id="header">
+    <nav class="menu">
+        <ul >
+          <li><a href="/" >Home</a></li>
+          <li><a href="faq.html" class="active">FAQ</a></li>
+          <li style="float:right"><a href="about.html">About</a></li>
+        </ul>
+     </nav>
+	</div>
 	<main id="content">
-		<link rel="stylesheet" href="/css/style.css" />
-		<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
-	    <div id="header">
-	        <nav class="menu">
-	            <ul >
-	              <li><a href="/" >Home</a></li>
-	              <li><a href="faq.html" class="active">FAQ</a></li>
-	              <li style="float:right"><a href="about.html">About</a></li>
-	            </ul>
-		     </nav>
-    	</div>
 		<div class="container">
 			<h1>FAQ</h1>
 			<h2>What is this site?</h2>
-			<div>A dynamic map of all hacker/maker spaces and fablabs. There is already some map out there, but you have to register. After a while the map wil be outdated, so for this map there are several 'live' souces used to be always uptodate. </div>
+			<div>A dynamic map of all hacker/maker spaces and fablabs. There is already some map out there, but you have to register. After a while the map wil be outdated, so for this map there are several 'live' sources used to be always up todate. </div>
 			<h2>What sources are used?</h2>
 			<div>There are tree main sources of data :  
 				<ul>
-					<li><a href="https://spaceapi.io/">spaceapi</a> directory
-						<div>read status via json</div>
+					<li><a href="https://spaceapi.io/directory/">SpaceApi</a> directory
+						<div>Read API directory and check every hackerspace json (if space is open or closed). Updated every 2 hours.</div>
 					</li>
-					<li><a href="https://fablabs.io/">fablab.oi</a> labs list
-						<div>Fablab should have status 'active'</div>
+					<li><a href="https://fablabs.io/">fablabs.oi</a> FabLab list
+						<div>Fablab should have status 'active'. Updated weekly.</div>
 					</li>
-					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> symantic data<div>Extra checks if already done bij spaceapi, more then 1 members and if entry older then 3 years if site still up.</div></li>
+					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> semantic data<div>Extra checks if already done bij spaceapi, more then 1 members and if entry older then 3 years if site still up. Updated weekly.</div></li>
 				</ul> 
 			</div>
-
-			<h2>Can i help you?</h2>
-			<div>Cool, thats nice of you. You could help me several ways :
-				<ul>
-					<li>Pay a small donation to cover cost of hosting etc.</li>
-					<li>If an entry is invalid (e.g. hackerspace close) edit this at the source.</li>			
-				</ul> 
-			</div>
+			Every 1th of the month the database and logfiles are removed and fill again from the sources.<br>
+			If a site couldn't load (http error etc.) it wil be skipped till next fresh update.<br>
+			Still don't see why your site is not included? Check our <a href="/errorlog.txt">error log</a> if we encountered some kind of error.
 			<h2>Can you update my entry?</h2>
 			<div>I don't keep a database of your data, I update this every day from the mentioned datasources. If you want to see where I got your data from, click on your icon and select 'source'. That should bring you to the data source where you can change your data. Allow at least 24 hours to update on this map.
 			</div>
+			<h2>Can i help you?</h2>
+			<div>Cool, thats nice of you. You could help me several ways :
+				<ul>
+					<li>If you like it consider a small (<a href="https://paypal.me/zeno4ever?locale.x=nl_NL">paypal (user zeno4ever)</a> or <a href="https://bunq.me/daveborghuis">iDeal (Bunq)</a>) donation. This will be used to cover hosting cost and drink a <a href="https://nl.wikipedia.org/wiki/Club-Mate">Club-Mate</a> to keep this site running.... </li>
+					<li>If an entry is invalid (e.g. hackerspace close) edit this at the source. You can easily find this to click on the icon and select 'source', this will redirect you straigt to source of the data.</li>
+				</ul> 
+			</div>
+
 		</div>
 		<div class="footer">Foooter</div>
 	</main>

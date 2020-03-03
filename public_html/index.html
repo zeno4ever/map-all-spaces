@@ -11,16 +11,17 @@
     <meta name="viewport" content="width = device-width, initial-scale = 1">
 
     <!-- jquery -->
-    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="//code.jquery.com/jquery-3.1.1.min.js"></script>
 
     <!-- Leaflet -->
-    <link rel="stylesheet" href="http://unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
-    <script src="http://unpkg.com/leaflet@1.0.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
+    <script src="//unpkg.com/leaflet@1.0.1/dist/leaflet.js"></script>
     <!--script src="leaflet.featuregroup.subgroup.js"></script-->
-    <script src="https://unpkg.com/leaflet.featuregroup.subgroup@1.0.1/dist/leaflet.featuregroup.subgroup.js"></script>
+    <script src="//unpkg.com/leaflet.featuregroup.subgroup@1.0.1/dist/leaflet.featuregroup.subgroup.js"></script>
 
     <script src="/dist/spin.min.js" charset="utf-8"></script>
     <script src="/dist/leaflet.spin.min.js" charset="utf-8"></script>
+    <script src="https://cdn.rawgit.com/Leaflet/Leaflet.markercluster/v1.0.0-beta.2.0/dist/leaflet.markercluster.js"></script>
 
     <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.Default.css">
     <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.css">
@@ -29,7 +30,6 @@
 </head>
 <body>
 
-    <script src="https://cdn.rawgit.com/Leaflet/Leaflet.markercluster/v1.0.0-beta.2.0/dist/leaflet.markercluster.js"></script>
 
     <div id="header">
         <nav class="menu">
@@ -45,7 +45,6 @@
         <div id="map"></div>
     </div>
     <script>
-        //var map = L.map('map').setView([38.607, -97.277], 5);
         var map = L.map('map').locate({setView: true, maxZoom: 8});
 
         map.spin(true);
@@ -59,13 +58,8 @@
             attribution: streetsAttr
         }).addTo(map);
 
-         var OpenStreetMap_Mapnik = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            id: 'MapID',
-            attribution: OpenStreetMap_MapnikAttr
-          });
-
          var OpenStreetMap_Mapnik = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
+            id: 'MapID', 
             attribution: OpenStreetMap_MapnikAttr
         });
 
@@ -181,13 +175,12 @@
     </script>
     <div class="legend">
         <ul>
-        <ul>Legend :</ul>
-        <ul><img src="/image/hs.png" alt="source spaceapi">API</ul>
-        <ul><img src="/image/hs_open.png" alt="source spaceapi">API open</ul>
-        <ul><img src="/image/hs_closed.png" alt="source spaceapi">API closed</ul>
-
-        <ul><img src="/image/fablab.png" alt="source fablab.oi">Fablab</ul>
-        <ul><img src="/image/hs_black.png" alt="source wiki.hackerspaces.org">Wiki</ul>
+        <li>Source </li>
+        <li><img src="/image/hs_open.png" alt="source spaceapi">API open</li>
+        <li><img src="/image/hs_closed.png" alt="source spaceapi">API closed</li>
+        <li><img src="/image/hs.png" alt="source spaceapi">API (unknown)</li>
+        <li><img src="/image/fablab.png" alt="source fablab.oi">Fablab</li>
+        <li><img src="/image/hs_black.png" alt="source wiki.hackerspaces.org">Wiki</li>
         </ul>
     </div>
 </body>
