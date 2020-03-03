@@ -6,3 +6,4 @@ database.db
 *.geojson
 settings.php
 test.php
+errorlog.txt

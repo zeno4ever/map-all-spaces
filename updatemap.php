@@ -17,16 +17,16 @@ ini_set('display_errors', 1);
 set_time_limit(0);// in secs, 0 for infinite
 date_default_timezone_set('Europe/Amsterdam');
 
-$loglevel = 0; //all
-$loglevelfile = 5; //log to logfile
+$loglevel = 1; //all
+$loglevelfile = 2; //log to logfile
 
 
 
 $cliOptions = getopt('',['all','wiki','api','fablab','log::','initdb']);
 
 if ($cliOptions == null) {
-echo "Usage update.php [options] \n --all   Process all options\n --wiki   Update data from wiki\
- --fablab Update data from fablab.io\n --log=1  define loglevel\n --initdb delete all records";
+echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
+ --fablab Update data from fablab.io\n --log=1  Define loglevel\n --initdb Delete all records\n --api    Spaceapi\n";
  exit;
 };
 
@@ -63,50 +63,7 @@ if (isset($cliOptions['log'])) {
 };
 
 
-
-
-
-
-
-// if (array_search('initdb', $argv) or array_search('all', $argv)) {
-//     $database->delete('space',['true']);
-//     var_dump($database);
-//     message('!! Database empty !!');
-//     //deled from database (refresh all)
-//     //
-//     // if (array_search('initdb', $argv)) {
-//     //     //$deleted = $database->delete('space',[true]);
-//     //     $deleted = $database->delete('space','');
-//     //     echo 'Records deleted - '.$deleted->rowCount();
-//     //     echo 'Records left  - '.$database->count('space');
-//     //     //exit;
-//     // }
-// };
-
-// if (array_search('api', $argv) or array_search('all', $argv)) {
-//     getSpaceApi();
-// };
-// if (array_search('fablab', $argv) or array_search('all', $argv)) {
-//   getFablabJson();
-
-// };
-// if (array_search('wiki', $argv) or array_search('all', $argv)) {
-//   getHackerspacesOrgJson();
-// };
-
-// if (array_search('comp', $argv) or array_search('all', $argv)) {
-//     compareDistance();
-// };
-
-// //dupes are removed, generate wiki geojson again.
-// if ( array_search('all', $argv)) {
-//   getHackerspacesOrgJson();
-// };
-
-
-
 message('End '.date("h:i:sa"),5);
-
 
 function getSpaceApi() {
     global $database;
@@ -338,7 +295,6 @@ function getHackerspacesOrgJson() {
     $result = getPageHackerspacesOrg($req_results,$req_page);
 
     while (isset($result) && count($result)>0) {
-        //echo ' count = '.count($result).PHP_EOL;
         foreach ($result as $space) {
 
             $fullname = $space['fulltext'];
@@ -411,10 +367,6 @@ function getHackerspacesOrgJson() {
 function getPageHackerspacesOrg($req_results,$req_page) {
     $offset = $req_page*$req_results;
     $url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D-20-5B-5BNumber-20of-20members::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
-
-    //$result = getCurl_old($url);
-    //return $result['results'];
-
 
     $getWikiJsonResult = getCurl($url);
 
@@ -508,8 +460,6 @@ function distance($lat1, $lon1, $lat2, $lon2, $unit) {
   }
 };
 
-///////
-
 function addspace(&$array_geo, $name, $lat, $lon, $address='', $zip='', $city='', $url, $email = '', $phone= '', $icon='/hsmap/hs.png',$source='',$sourcetype='A') 
 {
 
@@ -581,14 +531,20 @@ function getCurl($url,$timeout=240) {
 function message($message,$lineloglevel=0) {
     global $loglevel;
     global $loglevelfile;
+    global $geojson_path;
 
-    if ($lineloglevel > $loglevel) {
+    if ($lineloglevel >= $loglevel) {
         echo $message.PHP_EOL;
     };
 
-    if ($lineloglevel > $loglevelfile) {
-        $fp = fopen($error_logfile, 'a');
-        fwrite($fp,$message);
+    if ($lineloglevel >= $loglevelfile) {
+        //
+        if(!file_exists ( $geojson_path.'errorlog.txt' )) {
+            $message = "Map all spaces error log, see also FAQ\nError 0-99 Curl\nError 100-999 http\nError 1000 no valid json\nError 1001 dupe\n\n".$message;
+        }
+
+        $fp = fopen($geojson_path.'errorlog.txt', 'a');
+        fwrite($fp,$message.PHP_EOL);
         fclose($fp);
     };
 }
