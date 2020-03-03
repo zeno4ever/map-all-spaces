@@ -53,6 +53,10 @@ nav {
   background-color: #111;
 }
 
+.active {
+  background-color: #555;
+}
+
 /* Legend on footer of page*/
 
 .legend {
