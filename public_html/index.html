@@ -82,19 +82,6 @@
         var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
         var layerSpaceWiki = L.featureGroup.subGroup(masClusGroup).addTo(map);       
 
-
-        /*
-        //define arry for imporign all 
-        var  =  {
-            { '/hs.geojson',layerSpaceApi,5000}
-            { '/fablab.geojson',layerSpaceFablab,0}
-            { '/wiki.geojson',layerSpaceWiki,-5000}
-        } file , layer , zindex
-        // forecho ( arry as element) {
-            // import geojson and add layers
-        //}
-        */
-
         //spaceapi
         $.getJSON('/api.geojson', function(cartodbdata) {
             geojsonlayer= L.geoJson(cartodbdata, {
@@ -204,7 +191,5 @@
         <ul><img src="/image/hs_black.png" alt="source wiki.hackerspaces.org">Wiki</ul>
         </ul>
     </div>
-
-
 </body>
 </html>
