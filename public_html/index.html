@@ -53,25 +53,30 @@
 
         //attributes for basemap credit (lower right hand corner annotation)
         var streetsAttr = 'Map tiles by Carto, under CC BY 3.0. Data by <a href="https://openstreetmap.org">OpenStreetMap</a>, under ODbL.';
-        var aerialAttr = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+        var OpenStreetMap_MapnikAttr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
         var streets = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',  { 
             id: 'MapID', 
             attribution: streetsAttr
         }).addTo(map);
 
-         var aerial = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+         var OpenStreetMap_Mapnik = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             id: 'MapID',
-            attribution: aerialAttr
+            attribution: OpenStreetMap_MapnikAttr
           });
+
+         var OpenStreetMap_Mapnik = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: OpenStreetMap_MapnikAttr
+        });
 
         //create baseMaps variable to store basemap layer switcher
         var baseMaps = {
-          "Streets": streets,
-          "OSM": aerial,
+          "Carto Streets": streets,
+          "OpenStreetMap": OpenStreetMap_Mapnik,
         };
 
-        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 8}).addTo(map);
+        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 10}).addTo(map);
 
         var layerSpaceApi = L.featureGroup.subGroup(masClusGroup).addTo(map);
         var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
