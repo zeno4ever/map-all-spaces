@@ -21,12 +21,10 @@ $loglevel = 1; //all
 $loglevelfile = 2; //log to logfile
 
 
-
 $cliOptions = getopt('',['all','wiki','api','fablab','log::','initdb']);
-
 if ($cliOptions == null) {
 echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
- --fablab Update data from fablab.io\n --log=1  Define loglevel\n --initdb Delete all records\n --api    Spaceapi\n";
+ --fablab Update data from fablab.io\n --log=1  Define loglevel\n --init Delete all records and logfile\n --api    Spaceapi\n";
  exit;
 };
 
@@ -37,9 +35,12 @@ if (isset($cliOptions['log'])) {
   echo 'make log file level'.$cliOptions['log'].PHP_EOL;
 };
 
-if (isset($cliOptions['initdb']) or array_search('all', $argv)) {
+if (isset($cliOptions['init']) or array_search('all', $argv)) {
     $database->delete('space',Medoo::Raw('WHERE true'));
-    message('!! Database empty !!',4);
+    if(!file_exists ( $geojson_path.'errorlog.txt' )) {
+        unlink($geojson_path.'errorlog.txt');
+    }
+    echo('Init : database empty and logfile removed');
 };
 
 if (isset($cliOptions['api']) or isset($cliOptions['all'])) {
@@ -151,24 +152,20 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,
 
 
     if (!$found) {
-        //echo 'database Add'.PHP_EOL;
         $database->insert("space", [
             "source" => $source,
             "sourcekey" => $sourcekey,
             "lastdataupdated" => time(),
-
             "name" => $name,
             "lon" => $lon,
             "lat" => $lat,
             "curlerrors" => $curlerrors,
         ]);
     } else {
-        //echo 'database Update'.PHP_EOL;
         $database->update("space", [
             "source" => $source,
             "sourcekey" => $sourcekey,
             "lastdataupdated" => time(),
-
             "name" => $name,
             "lon" => $lon,
             "lat" => $lat,
@@ -181,23 +178,15 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,
     $errorlog = $database->error();
     if ($errorlog[1] != 0) {
         message('SqLite Error '.$errorlog[1]);
-        //var_dump($errorlog);
     };
 };
 
 function getFablabJson() {
     $array_geo = array ("type"=> "FeatureCollection");
 
-    // $hs_array = getCurl_old('https://api.fablabs.io/0/labs.json');
-
     $getFablabJsonResult = getCurl('https://api.fablabs.io/0/labs.json');
-    // $getFablabJsonResult['json']
-    // $getFablabJsonResult['error']
 
     message("## Update fablab json file",5);
-
-    //setup for json later
-    //$json_geo ='';
 
     //loop hackerspaces
     //foreach ($hs_array as $fablab ) {
@@ -390,7 +379,6 @@ function compareDistance() {
             $space_b = $space['name'];
             $spacesource_b = $space['source'];
             $sourcekey_b = $space['sourcekey'];
-            //$curlerrors_b = $space['curlerrors'];
             $lon_b = floatval($space['lon']);
             $lat_b = floatval($space['lat']); 
             $runfirst=false;
@@ -409,11 +397,9 @@ function compareDistance() {
 
         if ($distance <=200 && $namelike_perc>45 && !$runfirst && ($spacesource_a=='W' or $spacesource_b=='W')) {
             $found++;
-            //echo 'A lat='.$lat_a.' lon='.$lon_a.PHP_EOL;
-            //echo 'B lat='.$lat_b.' lon='.$lon_b.PHP_EOL;
-            echo "within $distance m %=".(int)$namelike_perc.' #='.$namelike.PHP_EOL;
-            echo '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']'.PHP_EOL;
-            echo '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']'.PHP_EOL;
+            message( "within $distance m %=".(int)$namelike_perc.' #='.$namelike.);
+            message( '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']'.);
+            message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']'.);
             if ($spacesource_a=='W') {
                 //set space to not found 
                 $database->update("space",["curlerrors" =>1001], ["source"=>$spacesource_a,"sourcekey" => $sourcekey_a]);
@@ -434,7 +420,6 @@ function compareDistance() {
         $lat_b = $lat_a; 
 
     };
-    echo 'Found '.$found.PHP_EOL;
 };
 
 
