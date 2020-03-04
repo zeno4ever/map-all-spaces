@@ -24,12 +24,15 @@
 			<div>There are tree main sources of data :  
 				<ul>
 					<li><a href="https://spaceapi.io/directory/">SpaceApi</a> directory
-						<div>Read API directory and check every hackerspace json (if space is open or closed). Updated every hour.</div>
+						<div>Read API directory and check every hackerspace json (if space is open or closed). Updated every hour. (Last update 
+							<?php echo date("F d Y H:i:s.",  filemtime("./api.geojson")); ?>)</div>
 					</li>
 					<li><a href="https://fablabs.io/">fablabs.oi</a> FabLab list
-						<div>Fablab should have status 'active'. Updated biweekly on 1th and 15th day of the week.</div>
+						<div>Fablab should have status 'active'. Updated biweekly on 1th and 15th day of the week. (Last update 
+							<?php echo date("F d Y H:i:s.",  filemtime("./fablab.geojson")); ?>)</div>
 					</li>
-					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a>semantic data<div>Only added to map when space is active, has more then 1 member and site is online. Extra check if a wiki entry is als added by API or Fablab, if so remove wiki entry from map. (Dupe = 2 entrys are less then 200m apart and name match for 45% or more) Updated biweekly on 1th and 15th day of the week.</div></li>
+					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> semantic data<div>Only added to map when space is active, has more then 1 member and site is online. Extra check if a wiki entry is als added by API or Fablab, if so remove wiki entry from map. (Dupe = 2 entrys are less then 200m apart and name match for 45% or more) Updated biweekly on 1th and 15th day of the week. (Last update 
+							<?php echo date("F d Y H:i:s.",  filemtime("./wiki.geojson")); ?>)</div></li>
 				</ul> 
 			</div>
 			Every 1th of the month the database and logfiles are removed and fill again from the sources.<br>
