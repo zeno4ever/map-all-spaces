@@ -397,9 +397,9 @@ function compareDistance() {
 
         if ($distance <=200 && $namelike_perc>45 && !$runfirst && ($spacesource_a=='W' or $spacesource_b=='W')) {
             $found++;
-            message( "within $distance m %=".(int)$namelike_perc.' #='.$namelike.);
-            message( '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']'.);
-            message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']'.);
+            message( "within $distance m %=".(int)$namelike_perc.' #='.$namelike);
+            message( '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']');
+            message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']');
             if ($spacesource_a=='W') {
                 //set space to not found 
                 $database->update("space",["curlerrors" =>1001], ["source"=>$spacesource_a,"sourcekey" => $sourcekey_a]);
