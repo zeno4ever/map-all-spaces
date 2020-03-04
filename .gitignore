@@ -1,7 +1,8 @@
 # Subliem Workspace files are user-specific
 *.sublime-workspace
+*.sublime-project
 
-#data files
+#data files for this project
 database.db
 *.geojson
 settings.php

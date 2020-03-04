@@ -54,12 +54,12 @@ if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
   getHackerspacesOrgJson();
 };
 
-if (isset($cliOptions['comp']) or isset($cliOptions['log'])) {
+if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
     compareDistance();
 };
 
 //dupes are removed, generate wiki geojson again.
-if (isset($cliOptions['log'])) {
+if (isset($cliOptions['comp']) and (isset($cliOptions['all']) or isset($cliOptions['wiki']))) {
   getHackerspacesOrgJson();
 };
 
