@@ -51,17 +51,3 @@ if ($errorlog[1] != 0) {
 } else {
 	echo 'File created :'.$databasefile;
 }
-
-// $result = $database->insert("space" ,[
-// 	"source" => 'B',
-// 	"sourcekey" => "http://blabla,nl",
-// 	"lat" => 33,
-// 	"lon" => 33,
-// 	"lastdataupdated" => time(),
-
-// ]);
-
-// $errorlog = $database->error();
-// if ($errorlog[1] != 0) {
-// 	echo 'SqLite Error '.$errorlog[1];
-// }

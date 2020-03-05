@@ -21,10 +21,10 @@ $loglevel = 1; //all
 $loglevelfile = 2; //log to logfile
 
 
-$cliOptions = getopt('',['all','wiki','api','fablab','log::','initdb']);
+$cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','initdb']);
 if ($cliOptions == null) {
 echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
- --fablab Update data from fablab.io\n --log=1  Define loglevel\n --init Delete all records and logfile\n --api    Spaceapi\n";
+ --fablab Update data from fablab.io\n --log=1  Define loglevel\n --init Delete all records and logfile\n --api    Spaceapi\n --comp   Dedupe wiki\n";
  exit;
 };
 
@@ -56,13 +56,10 @@ if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
 
 if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
     compareDistance();
+    if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
+        getHackerspacesOrgJson();
+    }
 };
-
-//dupes are removed, generate wiki geojson again.
-if (isset($cliOptions['comp']) and (isset($cliOptions['all']) or isset($cliOptions['wiki']))) {
-  getHackerspacesOrgJson();
-};
-
 
 message('End '.date("h:i:sa"),5);
 
