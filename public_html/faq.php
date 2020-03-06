@@ -28,10 +28,10 @@
 							<?php echo date("F d Y H:i:s.",  filemtime("./api.geojson")); ?>)</div>
 					</li>
 					<li><a href="https://fablabs.io/">fablabs.oi</a> FabLab list
-						<div>Fablab should have status 'active'. Updated biweekly on 1th and 15th day of the week. (Last update 
+						<div>Fablab should have status 'active'. Updated weekly. (Last update 
 							<?php echo date("F d Y H:i:s.",  filemtime("./fablab.geojson")); ?>)</div>
 					</li>
-					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> semantic data<div>Only added to map when space is active, has more then 1 member and site is online. Extra check if a wiki entry is als added by API or Fablab, if so remove wiki entry from map. (Dupe = 2 entrys are less then 200m apart and name match for 45% or more) Updated biweekly on 1th and 15th day of the week. (Last update 
+					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> semantic data<div>Only added to map when space is active, has more then 1 member and site is online. Extra check if a wiki entry is als added by API or Fablab, if so remove wiki entry from map. (Dupe = 2 entrys are less then 200m apart and name match for 45% or more) Updated weekly. (Last update 
 							<?php echo date("F d Y H:i:s.",  filemtime("./wiki.geojson")); ?>)</div></li>
 				</ul> 
 			</div>

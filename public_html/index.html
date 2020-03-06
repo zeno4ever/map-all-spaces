@@ -69,7 +69,7 @@
           "OpenStreetMap": OpenStreetMap_Mapnik,
         };
 
-        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 10}).addTo(map);
+        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 8}).addTo(map);
 
         var layerSpaceApi = L.featureGroup.subGroup(masClusGroup).addTo(map);
         var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
