@@ -11,7 +11,7 @@ $database = new Medoo([
 ]);
 
 // Enable Error Reporting and Display:
-error_reporting(~0);
+error_reporting(~1);
 ini_set('display_errors', 1);
 //system settings
 set_time_limit(0);// in secs, 0 for infinite
@@ -21,7 +21,7 @@ $loglevel = 1; //all
 $loglevelfile = 2; //log to logfile
 
 
-$cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','initdb']);
+$cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','init']);
 if ($cliOptions == null) {
 echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
  --fablab Update data from fablab.io\n --log=1  Define loglevel\n --init Delete all records and logfile\n --api    Spaceapi\n --comp   Dedupe wiki\n";
@@ -55,6 +55,7 @@ if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
 };
 
 if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
+    message('Start Compare',0);
     compareDistance();
     if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
         getHackerspacesOrgJson();
@@ -141,7 +142,7 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,
     global $database;
 
     if (($lat< -90 or $lat > 90) or ($lon < -180 or $lon > 180 )) {
-        message('longitude or latitude wrong for '.$name,5);
+        message('longitude or latitude wrong for '.$name.' lat='.$lat.' lon='.$lon.' Source='.$sourcecu,5);
     };
 
 
@@ -369,6 +370,8 @@ function compareDistance() {
     global $database;
     $results = $database->select('space',['source','sourcekey','name','lat','lon','curlerrors'],['curlerrors'=>0,"ORDER" => ['lat','lon'],]);
 
+    message('Found to compare records '.count($results));
+
     $runfirst = true;
     $found = 0;
     foreach ($results as $space) {
@@ -380,11 +383,11 @@ function compareDistance() {
             $lat_b = floatval($space['lat']); 
             $runfirst=false;
         }
-
         $space_a = $space['name'];
         $spacesource_a = $space['source'];
         $sourcekey_a = $space['sourcekey'];
         $curlerrors_a = $space['curlerrors'];
+
 
         $lon_a = floatval($space['lon']);
         $lat_a = floatval($space['lat']);
@@ -392,11 +395,14 @@ function compareDistance() {
         $distance = distance($lat_a,$lon_a,$lat_b,$lon_b,'K')*1000; //KM to meter
         $namelike = similar_text($space_a,$space_b,$namelike_perc);
 
+        message('Compare '.$space_a.' distance  '.(int) $distance,0);
+
+
         if ($distance <=200 && $namelike_perc>45 && !$runfirst && ($spacesource_a=='W' or $spacesource_b=='W')) {
             $found++;
-            message( "within $distance m %=".(int)$namelike_perc.' #='.$namelike);
-            message( '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']');
-            message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']');
+            message( "within $distance m %=".(int)$namelike_perc.' #='.$namelike,5);
+            message( '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']',5);
+            message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']',5);
             if ($spacesource_a=='W') {
                 //set space to not found 
                 $database->update("space",["curlerrors" =>1001], ["source"=>$spacesource_a,"sourcekey" => $sourcekey_a]);
