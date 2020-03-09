@@ -17,9 +17,8 @@ ini_set('display_errors', 1);
 set_time_limit(0);// in secs, 0 for infinite
 date_default_timezone_set('Europe/Amsterdam');
 
-$loglevel = 1; //all
+$loglevel = 0; //all
 $loglevelfile = 2; //log to logfile
-
 
 $cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','init']);
 if ($cliOptions == null) {
@@ -32,7 +31,7 @@ message('Start update '.date("h:i:sa"),5);
 
 if (isset($cliOptions['log'])) {
   $loglevel =  $cliOptions['log'];
-  echo 'make log file level'.$cliOptions['log'].PHP_EOL;
+  echo 'Log level set to '.$cliOptions['log'].PHP_EOL;
 };
 
 if (isset($cliOptions['init']) or array_search('all', $argv)) {
@@ -125,7 +124,6 @@ function getSpaceApi() {
                     addspace( $array_geo, $apiJson['space'] , $lon,$lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url,'A');
 
                     updateSpaceDatabase('A',cleanUrl($url),$space,0,$lon,$lat);
-                    //message("Updating $space ");
 
                 } else {
                     message("Skip $space - error ".$getApiResult['error'],5);
@@ -142,12 +140,10 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,
     global $database;
 
     if (($lat< -90 or $lat > 90) or ($lon < -180 or $lon > 180 )) {
-        message('longitude or latitude wrong for '.$name.' lat='.$lat.' lon='.$lon.' Source='.$sourcecu,5);
+        message('longitude or latitude wrong for '.$name.' lat='.$lat.' lon='.$lon.' Source='.$source,5);
     };
 
-
     $found = $database->has("space", ["source" =>$source,"sourcekey" => $sourcekey]);
-
 
     if (!$found) {
         $database->insert("space", [
@@ -186,8 +182,6 @@ function getFablabJson() {
 
     message("## Update fablab json file",5);
 
-    //loop hackerspaces
-    //foreach ($hs_array as $fablab ) {
     foreach ($getFablabJsonResult['json'] as $fablab ) {
         //echo "Updating ".$fablab['name'].PHP_EOL;
 
@@ -298,6 +292,10 @@ function getHackerspacesOrgJson() {
 
             $url = (isset($space['printouts']['Website'][0])) ? $space['printouts']['Website'][0] : null;
 
+            $member = (isset($space['printouts']['Number of members'][0])) ? $space['printouts']['Number of members'][0] : null;
+            if ( $member != null ) {
+                message($fullname.' Number of members are ['.$member.'] type '.gettype($member),5);
+            };
             $spaceapi = (isset($space['printouts']['SpaceAPI'][0])) ?  $space['printouts']['SpaceAPI'][0]  : '';
             $source = $space['fullurl'];
             $lastupdate = date_create(date("Y-m-d\TH:i:s", $space['printouts']['Modification date'][0]['timestamp']));
@@ -353,7 +351,14 @@ function getHackerspacesOrgJson() {
 
 function getPageHackerspacesOrg($req_results,$req_page) {
     $offset = $req_page*$req_results;
-    $url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D-20-5B-5BNumber-20of-20members::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
+    //Original 9 march 2020
+    //$url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D-20-5B-5BNumber-20of-20members::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
+
+    //For testing with extra selection (country)
+    //$url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D-5B-5BCountry::Spain-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
+
+    //Live
+    $url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
 
     $getWikiJsonResult = getCurl($url);
 
@@ -381,14 +386,13 @@ function compareDistance() {
             $sourcekey_b = $space['sourcekey'];
             $lon_b = floatval($space['lon']);
             $lat_b = floatval($space['lat']); 
+            $curlerrors_b = $space['curlerrors'];
             $runfirst=false;
         }
         $space_a = $space['name'];
         $spacesource_a = $space['source'];
         $sourcekey_a = $space['sourcekey'];
         $curlerrors_a = $space['curlerrors'];
-
-
         $lon_a = floatval($space['lon']);
         $lat_a = floatval($space['lat']);
 
@@ -396,7 +400,6 @@ function compareDistance() {
         $namelike = similar_text($space_a,$space_b,$namelike_perc);
 
         message('Compare '.$space_a.' distance  '.(int) $distance,0);
-
 
         if ($distance <=200 && $namelike_perc>45 && !$runfirst && ($spacesource_a=='W' or $spacesource_b=='W')) {
             $found++;
@@ -418,10 +421,9 @@ function compareDistance() {
         $space_b = $space_a;
         $spacesource_b = $spacesource_a;
         $sourcekey_b = $sourcekey_a;
-        //$curlerrors_b = $curlerrors_a;
+        $curlerrors_b = $curlerrors_a;
         $lon_b = $lon_a;
         $lat_b = $lat_a; 
-
     };
 };
 
