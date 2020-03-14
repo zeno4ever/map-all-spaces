@@ -1,5 +1,6 @@
 # map-all-spaces
-Map with all hackerspaces, fablabs and makerspaces.
+
+Map with all hackerspaces, fablabs and makerspaces. Check it out [here](https://mapall.space)!
 
 Combine several sources and put them together on one map. This will result in a uptodate map.
 
