@@ -61,6 +61,13 @@ nav {
   background-color: #555;
 }
 
+.menu github li a:hover {
+  width: 25px;
+  height: 25px;
+  padding-left: 50px;
+  float:right;
+}
+
 /* Legend on footer of page*/
 .legend {
   height: 20px;
@@ -90,8 +97,8 @@ nav {
 }
 
 .legend li a {
-  display: block;
-  text-align: center;
+ /* display: block;
+ */ text-align: center;
   padding: 14px 16px;
   text-decoration: none;
 }

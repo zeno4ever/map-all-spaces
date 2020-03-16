@@ -23,7 +23,7 @@ $loglevelfile = 2; //log to logfile
 $cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','init']);
 if ($cliOptions == null) {
 echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
- --fablab Update data from fablab.io\n --log=1  Define loglevel\n --init Delete all records and logfile\n --api    Spaceapi\n --comp   Dedupe wiki\n";
+ --fablab Update data from fablab.io\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n --api    Spaceapi\n --comp   Dedupe wiki\n";
  exit;
 };
 
@@ -87,7 +87,7 @@ function getSpaceApi() {
             if ($foundError) {
                 message('SKIP (in database with error) for '.$space,4);
             } else {
-                $getApiResult = getCurl($url,5);
+                $getApiResult = getCurl($url,20);
 
                 if ( isset($getApiResult['json']) && $getApiResult['error']==0) {
                     $apiJson = $getApiResult['json'];            

@@ -4,6 +4,7 @@
     <title>Map all spaces</title>
 
     <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
 
     <!-- If IE use the latest rendering engine -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -12,20 +13,26 @@
 
     <!-- jquery -->
     <script src="//code.jquery.com/jquery-3.1.1.min.js"></script>
-
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
-    <script src="//unpkg.com/leaflet@1.0.1/dist/leaflet.js"></script>
+    <!-- Leaflet v1.0.1 -->
+    <link rel="stylesheet" href="//unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+    <script src="//unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
     <!--script src="leaflet.featuregroup.subgroup.js"></script-->
-    <script src="//unpkg.com/leaflet.featuregroup.subgroup@1.0.1/dist/leaflet.featuregroup.subgroup.js"></script>
+    <script src="https://unpkg.com/leaflet.featuregroup.subgroup@1.0.2/dist/leaflet.featuregroup.subgroup.js"></script>
 
+    <!-- Leaflet loading spinner-->
     <script src="/dist/spin.min.js" charset="utf-8"></script>
     <script src="/dist/leaflet.spin.min.js" charset="utf-8"></script>
-    <script src="https://cdn.rawgit.com/Leaflet/Leaflet.markercluster/v1.0.0-beta.2.0/dist/leaflet.markercluster.js"></script>
+
+    <!-- Leaflet clusters / groeps -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/"></script>
 
     <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.Default.css">
     <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.css">
-    <link rel="stylesheet" type="text/css" href="/css/style.css">
+
+    <!-- Leaflet search -->
+    <link rel="stylesheet" href="/css/leaflet-search.css" />
+    <script src="/dist/leaflet-search.js"></script>
 
 </head>
 <body>
@@ -36,9 +43,10 @@
             <ul >
               <li><a href="/" class="active">Home</a></li>
               <li><a href="faq.php">FAQ</a></li>
-              <li style="float:right"><a href="about.html">About</a></li>
+              <li><a href="about.html">About</a></li>
             </ul>
         </nav>
+        <div style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" style=""><img src="/image/github-white.png" alt="Join us on Github"></a></div>
     </div>
 
     <div class="container">
@@ -47,7 +55,7 @@
     <script>
         var map = L.map('map').locate({setView: true, maxZoom: 8});
 
-        map.spin(true);
+        //map.spin(true);
 
         //attributes for basemap credit (lower right hand corner annotation)
         var streetsAttr = 'Map tiles by Carto, under CC BY 3.0. Data by <a href="https://openstreetmap.org">OpenStreetMap</a>, under ODbL.';
@@ -69,7 +77,7 @@
           "OpenStreetMap": OpenStreetMap_Mapnik,
         };
 
-        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 8}).addTo(map);
+        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 8, chunkedLoading: true}).addTo(map);
 
         var layerSpaceApi = L.featureGroup.subGroup(masClusGroup).addTo(map);
         var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
@@ -160,9 +168,6 @@
             })/*.addTo(layerSpaceApi)*/;
          });
 
-        $(document).ajaxComplete(function (event, xhr, settings) {
-            map.spin(false);
-        });
 
         var overLayMap = {
             "Hackerspace (SpaceAPI)": layerSpaceApi,
@@ -171,6 +176,34 @@
         };
 
         L.control.layers(baseMaps, overLayMap).addTo(map);
+
+        var poiLayers = L.layerGroup([
+            layerSpaceApi,
+            layerSpaceFablab,
+            layerSpaceWiki
+        ])
+        .addTo(map);
+
+        L.control.search({
+            layer: poiLayers,
+            initial: false,
+            propertyName: 'name',
+            minLength: 2,
+            buildTip: function(text, val) {
+                var type = val.layer.feature.properties.sourcetype;
+                var url = val.layer.feature.properties.source;
+                return '<a href="#" class="'+url+'">'+text+'  ('+type+')</a>';
+            },
+            moveToLocation: function(latlng, title, map) {
+                map.setView(latlng, 8); // access the zoom
+            }   
+        })
+        .addTo(map);
+
+
+        $(document).ajaxComplete(function (event, xhr, settings) {
+            //map.spin(false);
+        });
 
     </script>
     <div class="legend">

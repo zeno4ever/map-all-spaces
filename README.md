@@ -16,7 +16,7 @@ For details about what 'rules' apply check the FAQ html page.
 
 Any questions or remarks contact me mapall@daveborghuis.nl.
 
-## How to use
+## Instal for local use/test
 
 - Copy 'settings_example.php' to 'settings.php' and change paths to reflect your local system. 
 - Run 'php setup.php' to create a sqlite database with table.
@@ -40,3 +40,10 @@ Options of update.php
   --comp   Dedupe wiki
 
 The above steps will generate \*.geojson files that will be read by the maps leaflet. You have to have a webserver that points to the 'public_html' directory of alternative you can use the php server to do this. Go the the 'public_html' directory and enter 'php -S localhost:8000', this will start a local webserver where you can see the results.
+
+
+# Used components 
+
+- [Leaflet](https://leafletjs.com/)
+- [Control groups]()
+- [Search](https://github.com/stefanocudini/leaflet-search)
