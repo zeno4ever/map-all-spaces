@@ -16,6 +16,8 @@ if (isset($databasefile)) {
 	exit;
 };
 
+$database->drop("space");
+
 $database->create("space", [
 	"source" => [
 		"VARCHAR(30)",
@@ -35,7 +37,10 @@ $database->create("space", [
 	"name" => [
 		"VARCHAR(30)"
 	],
-	"curlerrors" => [
+	"lastcurlerror" => [
+		"INTEGER"
+	],
+	"curlerrorcount" => [
 		"INTEGER"
 	],
 	"lastdataupdated" => [

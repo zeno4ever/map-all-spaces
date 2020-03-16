@@ -82,7 +82,7 @@ function getSpaceApi() {
 
             message('Space '.$space);
 
-            $foundError = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($url),"curlerrors[>]" =>0]);
+            $foundError = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($url),"lastcurlerror[>]" =>0, "curlerrorcount[>]"=>3]);
             
             if ($foundError) {
                 message('SKIP (in database with error) for '.$space,4);
@@ -136,7 +136,7 @@ function getSpaceApi() {
     };
 };
 
-function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,$lon=0) {
+function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat=0,$lon=0) {
     global $database;
 
     if (($lat< -90 or $lat > 90) or ($lon < -180 or $lon > 180 )) {
@@ -144,6 +144,12 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,
     };
 
     $found = $database->has("space", ["source" =>$source,"sourcekey" => $sourcekey]);
+
+    if ($lastcurlerror!=0) {
+        $errorcount = 1;
+    } else {
+        $errorcount = 0;
+    }
 
     if (!$found) {
         $database->insert("space", [
@@ -153,7 +159,8 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,
             "name" => $name,
             "lon" => $lon,
             "lat" => $lat,
-            "curlerrors" => $curlerrors,
+            "lastcurlerror" => $lastcurlerror,
+            "curlerrorcount" => $errorcount, 
         ]);
     } else {
         $database->update("space", [
@@ -163,7 +170,8 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$curlerrors=0,$lat=0,
             "name" => $name,
             "lon" => $lon,
             "lat" => $lat,
-            "curlerrors" => $curlerrors,
+            "lastcurlerror" => $lastcurlerror,
+            "curlerrorcount[+]" =>$errorcount,
         ],
           ["source" =>$source,"sourcekey" => $sourcekey]
     );
@@ -302,20 +310,21 @@ function getHackerspacesOrgJson() {
             $interval = date_diff($now, $lastupdate)->format('%a'); 
 
             //if space not added to map with api add it here.
-            $foundSpaceApi = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($spaceapi),"curlerrors" =>0]);
+            $foundSpaceApi = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($spaceapi),"lastcurlerror" =>0]);
 
             if ($foundSpaceApi) {
                message('SKIP '.$fullname).' foundapi:'. $spaceapi;     
             } else {
 
                 //check for results previos run
-                $wiki_curlerror = $database->get("space",["curlerrors"], ["source"=>"W","sourcekey"  => $source]);
-                if (isset($wiki_curlerror["curlerrors"])) {
-                    if ($wiki_curlerror["curlerrors"]==0) {
+                $wiki_curlerror = $database->get("space",["lastcurlerror","curlerrorcount"], ["source"=>"W","sourcekey"  => $source]);
+
+                if (isset($wiki_curlerror["lastcurlerror"])) {
+                    if ($wiki_curlerror["lastcurlerror"]==0) {
                         //sit is up previous run
                         addspace( $array_geo, $fullname , $lon,$lat, '', '', $city, $url, $email, $phone, $icon, $source,'W');
                         message('Checked already, add to map '.$fullname);
-                    } elseif($wiki_curlerror["curlerrors"]!=0) {
+                    } elseif($wiki_curlerror["lastcurlerror"]!=0) {
                         message('Checked already, site down '.$fullname);
                     }
                 } else {
@@ -334,9 +343,9 @@ function getHackerspacesOrgJson() {
         };
 
         //testing
-        // if ($req_page>2) {
-        //     return;
-        // }
+        if ($req_page>2) {
+            return;
+        }
 
         $req_page++;
         $result = getPageHackerspacesOrg($req_results,$req_page);
@@ -373,7 +382,7 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 
 function compareDistance() {
     global $database;
-    $results = $database->select('space',['source','sourcekey','name','lat','lon','curlerrors'],['curlerrors'=>0,"ORDER" => ['lat','lon'],]);
+    $results = $database->select('space',['source','sourcekey','name','lat','lon','lastcurlerror'],['lastcurlerror'=>0,"ORDER" => ['lat','lon'],]);
 
     message('Found to compare records '.count($results));
 
@@ -386,13 +395,13 @@ function compareDistance() {
             $sourcekey_b = $space['sourcekey'];
             $lon_b = floatval($space['lon']);
             $lat_b = floatval($space['lat']); 
-            $curlerrors_b = $space['curlerrors'];
+            $lastcurlerror_b = $space['lastcurlerror'];
             $runfirst=false;
         }
         $space_a = $space['name'];
         $spacesource_a = $space['source'];
         $sourcekey_a = $space['sourcekey'];
-        $curlerrors_a = $space['curlerrors'];
+        $lastcurlerror_a = $space['lastcurlerror'];
         $lon_a = floatval($space['lon']);
         $lat_a = floatval($space['lat']);
 
@@ -408,10 +417,10 @@ function compareDistance() {
             message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']',5);
             if ($spacesource_a=='W') {
                 //set space to not found 
-                $database->update("space",["curlerrors" =>1001], ["source"=>$spacesource_a,"sourcekey" => $sourcekey_a]);
+                $database->update("space",["lastcurlerror" =>1001], ["source"=>$spacesource_a,"sourcekey" => $sourcekey_a]);
                 message('  1 Updated ');
             } elseif($spacesource_b=='W') {
-                $database->update("space", ["curlerrors" =>1001],["source"=>$spacesource_b,"sourcekey" => $sourcekey_b]);
+                $database->update("space", ["lastcurlerror" =>1001],["source"=>$spacesource_b,"sourcekey" => $sourcekey_b]);
                 message('  2 Updated ');
             } else {
                 message('** nothing updated.');
@@ -421,7 +430,7 @@ function compareDistance() {
         $space_b = $space_a;
         $spacesource_b = $spacesource_a;
         $sourcekey_b = $sourcekey_a;
-        $curlerrors_b = $curlerrors_a;
+        $lastcurlerror_b = $lastcurlerror_a;
         $lon_b = $lon_a;
         $lat_b = $lat_a; 
     };
