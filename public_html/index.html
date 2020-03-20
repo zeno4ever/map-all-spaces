@@ -140,6 +140,35 @@
             });
          });
 
+        //fablabq
+        $.getJSON('/fablabq.geojson', function(cartodbdata) {
+            geojsonlayer= L.geoJson(cartodbdata, {
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties.name) {
+                            var html = '<b>'+feature.properties.name+'</b><br/>'+
+                                feature.properties.address+'<br/>'+
+                                feature.properties.zip+' '+feature.properties.city+'<br/>'+
+                                "<a href='"+feature.properties.url+"' target='_blank' >website</a>  "+
+                                "<a href='"+feature.properties.source+"' target='_blank' >source</a><br/>"
+                            layer.bindPopup(html).addTo(layerSpaceFablab);
+                        };
+                },
+                pointToLayer: function (feature, latlon) {
+                var iconurl = feature.properties['marker-symbol'];
+                return new L.Marker(latlon, {
+                    icon: new L.icon({
+                        iconUrl: iconurl,
+                        iconSize: [30, 70],
+                        iconAnchor: [15, 35],
+                        popupAnchor: [0, -25]
+                    })
+                });
+            }
+            });
+         });
+
+
+
         //wiki
         $.getJSON('/wiki.geojson', function(cartodbdata) {
             geojsonlayer= L.geoJson(cartodbdata, {
@@ -192,7 +221,8 @@
             buildTip: function(text, val) {
                 var type = val.layer.feature.properties.sourcetype;
                 var url = val.layer.feature.properties.source;
-                return '<a href="#" class="'+url+'">'+text+'  ('+type+')</a>';
+                var city = val.layer.feature.properties.city;
+                return '<a href="#" class="'+url+'">'+text+' - '+city+'  ('+type+')</a>';
             },
             moveToLocation: function(latlng, title, map) {
                 map.setView(latlng, 8); // access the zoom
