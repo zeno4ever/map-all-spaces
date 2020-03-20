@@ -20,7 +20,7 @@ date_default_timezone_set('Europe/Amsterdam');
 $loglevel = 0; //all
 $loglevelfile = 2; //log to logfile
 
-$cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','init']);
+$cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','init','fablabq']);
 if ($cliOptions == null) {
 echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
  --fablab Update data from fablab.io\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n --api    Spaceapi\n --comp   Dedupe wiki\n";
@@ -49,6 +49,10 @@ if (isset($cliOptions['fablab']) or isset($cliOptions['all'])) {
   getFablabJson();
 
 };
+if (isset($cliOptions['fablabq']) or isset($cliOptions['all'])) {
+  getFablabQuebecJson();
+};
+
 if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
   getHackerspacesOrgJson();
 };
@@ -359,8 +363,6 @@ function getHackerspacesOrgJson() {
 
 
 
-
-
 function getPageHackerspacesOrg($req_results,$req_page) {
     $offset = $req_page*$req_results;
     //Original 9 march 2020
@@ -381,6 +383,72 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 
     return $getWikiJsonResult['json']['results'];
 };
+
+
+function getFablabQuebecJson() {
+    global $database;
+
+    $array_geo = array ("type"=> "FeatureCollection");
+    $req_results = 50;
+    $req_page = 0;
+            
+    message('#### JSON from Fablab Quebec');
+
+    $result = getPageFablabQuebec($req_results,$req_page);
+
+    while (isset($result) && count($result)>0) {
+        foreach ($result as $space) {
+
+            $fullname = $space['fulltext'];
+
+            $lat =  $space['printouts']['A les coordonnées géographiques'][0]['lat'];
+            $lon =  $space['printouts']['A les coordonnées géographiques'][0]['lon'];
+
+            $address = (isset($space['printouts']['A l adresse physique'][0])) ? $space['printouts']['A l adresse physique'][0] : '';
+            $city = (isset($space['printouts']['Est situé dans la localité'][0]))? $space['printouts']['Est situé dans la localité'][0]:'';
+
+            $icon = '/image/fablab.png';
+
+            $url = (isset($space['printouts']['A l adresse web'][0])) ? $space['printouts']['A l adresse web'][0] : null;
+            $source = $space['fullurl'];
+
+            updateSpaceDatabase('Q',$source,$fullname,0,$lon,$lat);
+
+            addspace( $array_geo, $fullname , $lon,$lat, $address, '', $city, $url, '', '', $icon, $source,'Q');
+
+        };
+
+        // testing
+        // if ($req_page>1) {
+        //     break;
+        // }
+
+        $req_page++;
+        $result = getPageFablabQuebec($req_results,$req_page);
+    };
+
+    if ($req_page !=0) {
+       saveGeoJSON('fablabq.geojson',$array_geo);        
+    } else {
+        message('No wiki spaces found, nothing written');
+    }
+};
+
+function getPageFablabQuebec($req_results,$req_page) {
+    $offset = $req_page*$req_results;
+
+    $url ="https://wiki.fablabs-quebec.org/index.php/Spécial:Requêter/format=json/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/offset=$offset/limit=$req_results/-5B-5BCatégorie:Fab-20Lab-20au-20Québec-5D-5D-20-5B-5BA-20les-20coordonnées-20géographiques::+-5D-5D/-3FA-20les-20coordonnées-20géographiques/-3FA-20l-20adresse-20web//-3F-20Est-20situé-20dans-20la-20localité/-3F-20A-20l-20adresse-20physique/mainlabel=/prettyprint=true/unescape=true";
+
+    $getWikiJsonResult = getCurl($url);
+
+    if ($getWikiJsonResult['error']!=0){
+        message(' Error while get wiki json '.$getWikiJsonResult['error']);
+        return null;
+    }
+
+    return $getWikiJsonResult['json']['results'];
+
+}
 
 
 function compareDistance() {
@@ -515,14 +583,28 @@ function getCurl($url,$timeout=240) {
 
     curl_close($curlSession);
 
+    // message('Get '.$url);
+    // var_dump($space_api_json);
+
     if ( $curl_error == 0 && $curl_info == 200 ) {
-        $json = json_decode($space_api_json, true);
-        if ($json != null ){
-            return array('json'=>$json,'error'=>0 );
+
+        if ($space_api_json!='') {
+             $json = json_decode($space_api_json, true);
+
+            if (json_last_error()!=0 ) {
+                message('JSON Error '.json_last_error() .' Message '.json_last_error_msg() );
+            }
+
+            if ($json != null ){
+                return array('json'=>$json,'error'=>0 );
+            } else {
+                //couldn't convert to json
+                return array('json'=>null,'error'=>1000 );
+            };   
         } else {
-            //couldn't convert to json
-            return array('json'=>null,'error'=>1000 );
-        };
+            return array('json'=>null,'error'=>0 );
+        }
+
     } else {
         //message( '--Error on url '.$url.' CURL-ERROR:'.$curl_error.' INFO:'.$curl_info.'');
         $error = ($curl_error!=0) ? $curl_error : $curl_info;  
