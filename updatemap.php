@@ -343,9 +343,9 @@ function getHackerspacesOrgJson() {
         };
 
         //testing
-        if ($req_page>2) {
-            return;
-        }
+        // if ($req_page>2) {
+        //     return;
+        // }
 
         $req_page++;
         $result = getPageHackerspacesOrg($req_results,$req_page);
@@ -356,6 +356,9 @@ function getHackerspacesOrgJson() {
         message('No wiki spaces found, nothing written');
     }
 };
+
+
+
 
 
 function getPageHackerspacesOrg($req_results,$req_page) {
