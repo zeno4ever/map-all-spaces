@@ -1,7 +1,10 @@
 <?php
-include 'settings.php';
+include './settings.php';
 
-require  './src/Medoo.php';
+require 'vendor/autoload.php';
+
+require 'mapall_functions.php';
+
 use Medoo\Medoo;
 
 //open database
@@ -20,10 +23,10 @@ date_default_timezone_set('Europe/Amsterdam');
 $loglevel = 0; //all
 $loglevelfile = 2; //log to logfile
 
-$cliOptions = getopt('',['all','wiki','api','fablab','log::','comp','init','fablabq']);
+$cliOptions = getopt('',['all','wiki','api','fablab','fablabq','log::','comp','init']);
 if ($cliOptions == null) {
 echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
- --fablab Update data from fablab.io\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n --api    Spaceapi\n --comp   Dedupe wiki\n";
+ --fablab Update data from fablab.io\n --fablabq Update data from fablab quebec\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n --api    Spaceapi\n --comp   Dedupe wiki\n";
  exit;
 };
 
@@ -74,7 +77,7 @@ function getSpaceApi() {
 
     message("## Update Space api json file",5);
 
-    $getApiDirResult = getCurl('https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json');
+    $getApiDirResult = getJSON('https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json');
     $hs_array = $getApiDirResult['json'];
 
     if ($getApiDirResult['error']!=0) {
@@ -91,7 +94,7 @@ function getSpaceApi() {
             if ($foundError) {
                 message('SKIP (in database with error) for '.$space,4);
             } else {
-                $getApiResult = getCurl($url,20);
+                $getApiResult = getJSON($url,20);
 
                 if ( isset($getApiResult['json']) && $getApiResult['error']==0) {
                     $apiJson = $getApiResult['json'];            
@@ -190,7 +193,7 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat
 function getFablabJson() {
     $array_geo = array ("type"=> "FeatureCollection");
 
-    $getFablabJsonResult = getCurl('https://api.fablabs.io/0/labs.json');
+    $getFablabJsonResult = getJSON('https://api.fablabs.io/0/labs.json');
 
     message("## Update fablab json file",5);
 
@@ -304,10 +307,11 @@ function getHackerspacesOrgJson() {
 
             $url = (isset($space['printouts']['Website'][0])) ? $space['printouts']['Website'][0] : null;
 
-            $member = (isset($space['printouts']['Number of members'][0])) ? $space['printouts']['Number of members'][0] : null;
-            if ( $member != null ) {
-                message($fullname.' Number of members are ['.$member.'] type '.gettype($member),5);
-            };
+            // $member = (isset($space['printouts']['Number of members'][0])) ? $space['printouts']['Number of members'][0] : null;
+            // if ( $member != null ) {
+            //     message($fullname.' Number of members are ['.$member.'] type '.gettype($member),5);
+            // };
+
             $spaceapi = (isset($space['printouts']['SpaceAPI'][0])) ?  $space['printouts']['SpaceAPI'][0]  : '';
             $source = $space['fullurl'];
             $lastupdate = date_create(date("Y-m-d\TH:i:s", $space['printouts']['Modification date'][0]['timestamp']));
@@ -332,7 +336,7 @@ function getHackerspacesOrgJson() {
                         message('Checked already, site down '.$fullname);
                     }
                 } else {
-                    $getSiteStatus = getCurl($url);
+                    $getSiteStatus = getJSON($url);
       
                     if($getSiteStatus['error']==0 or $getSiteStatus['error']==1000) {
                         addspace( $array_geo, $fullname , $lon,$lat, '', '', $city, $url, $email, $phone, $icon, $source,'W');
@@ -369,12 +373,13 @@ function getPageHackerspacesOrg($req_results,$req_page) {
     //$url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D-20-5B-5BNumber-20of-20members::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
 
     //For testing with extra selection (country)
+    //$country =
     //$url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D-5B-5BCountry::Spain-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
 
     //Live
     $url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=desc/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/mainlabel=/prettyprint=true/unescape=true";
 
-    $getWikiJsonResult = getCurl($url);
+    $getWikiJsonResult = getJSON($url);
 
     if ($getWikiJsonResult['error']!=0){
         message(' Error while get wiki json '.$getWikiJsonResult['error']);
@@ -439,7 +444,7 @@ function getPageFablabQuebec($req_results,$req_page) {
 
     $url ="https://wiki.fablabs-quebec.org/index.php/Spécial:Requêter/format=json/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/offset=$offset/limit=$req_results/-5B-5BCatégorie:Fab-20Lab-20au-20Québec-5D-5D-20-5B-5BA-20les-20coordonnées-20géographiques::+-5D-5D/-3FA-20les-20coordonnées-20géographiques/-3FA-20l-20adresse-20web//-3F-20Est-20situé-20dans-20la-20localité/-3F-20A-20l-20adresse-20physique/mainlabel=/prettyprint=true/unescape=true";
 
-    $getWikiJsonResult = getCurl($url);
+    $getWikiJsonResult = getJSON($url);
 
     if ($getWikiJsonResult['error']!=0){
         message(' Error while get wiki json '.$getWikiJsonResult['error']);
@@ -481,16 +486,16 @@ function compareDistance() {
 
         message('Compare '.$space_a.' distance  '.(int) $distance,0);
 
-        if ($distance <=200 && $namelike_perc>45 && !$runfirst && ($spacesource_a=='W' or $spacesource_b=='W')) {
+        if ($distance <=200 && $namelike_perc>45 && !$runfirst && ($spacesource_a=='W' or $spacesource_b=='W' or $spacesource_a=='Q' or $spacesource_b=='Q')) {
             $found++;
             message( "within $distance m %=".(int)$namelike_perc.' #='.$namelike,5);
             message( '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']',5);
             message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']',5);
-            if ($spacesource_a=='W') {
+            if ($spacesource_a=='W' or $spacesource_a=='Q') {
                 //set space to not found 
                 $database->update("space",["lastcurlerror" =>1001], ["source"=>$spacesource_a,"sourcekey" => $sourcekey_a]);
                 message('  1 Updated ');
-            } elseif($spacesource_b=='W') {
+            } elseif($spacesource_b=='W' or $spacesource_b=='Q') {
                 $database->update("space", ["lastcurlerror" =>1001],["source"=>$spacesource_b,"sourcekey" => $sourcekey_b]);
                 message('  2 Updated ');
             } else {
@@ -555,61 +560,6 @@ function addspace(&$array_geo, $name, $lat, $lon, $address='', $zip='', $city=''
             "sourcetype" => $sourcetype,          
         )
     );
-};
-
-function getCurl($url,$timeout=240) {
-    global $messages;
-    $curlSession = curl_init();
-    curl_setopt($curlSession, CURLOPT_BINARYTRANSFER, true);
-    curl_setopt($curlSession, CURLOPT_RETURNTRANSFER, true);
-
-    curl_setopt($curlSession, CURLOPT_USERAGENT, "mapall.space");
-    //for redirect
-    curl_setopt($curlSession, CURLOPT_FOLLOWLOCATION, true);
-    
-    //no ssl verification
-    //curl_setopt($curlSession, CURLOPT_SSL_VERIFYPEER, false);
-    //curl_setopt($curlSession, CURLOPT_SSL_VERIFYHOST, false);
-    
-    //timeout in secs
-    curl_setopt($curlSession, CURLOPT_TIMEOUT,$timeout); 
-
-    //get file
-    curl_setopt($curlSession, CURLOPT_URL, $url);
-    $space_api_json = curl_exec($curlSession);
-
-    $curl_error = curl_errno($curlSession);
-    $curl_info = curl_getinfo($curlSession,CURLINFO_HTTP_CODE);
-
-    curl_close($curlSession);
-
-    // message('Get '.$url);
-    // var_dump($space_api_json);
-
-    if ( $curl_error == 0 && $curl_info == 200 ) {
-
-        if ($space_api_json!='') {
-             $json = json_decode($space_api_json, true);
-
-            if (json_last_error()!=0 ) {
-                message('JSON Error '.json_last_error() .' Message '.json_last_error_msg() );
-            }
-
-            if ($json != null ){
-                return array('json'=>$json,'error'=>0 );
-            } else {
-                //couldn't convert to json
-                return array('json'=>null,'error'=>1000 );
-            };   
-        } else {
-            return array('json'=>null,'error'=>0 );
-        }
-
-    } else {
-        //message( '--Error on url '.$url.' CURL-ERROR:'.$curl_error.' INFO:'.$curl_info.'');
-        $error = ($curl_error!=0) ? $curl_error : $curl_info;  
-        return array('json'=>null,'error'=>$error);
-    };
 };
 
 function message($message,$lineloglevel=0) {

@@ -4,6 +4,7 @@
     <title>Map all spaces</title>
 
     <meta charset="UTF-8">
+    <meta name="Map hackerspaces/fablabs/makerspaces " content="Dynamic map with all hackerspace, fablabs and makerspaces">
     <link rel="stylesheet" type="text/css" href="/css/style.css">
 
     <!-- If IE use the latest rendering engine -->
@@ -12,7 +13,7 @@
     <meta name="viewport" content="width = device-width, initial-scale = 1">
 
     <!-- jquery -->
-    <script src="//code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <!-- Leaflet v1.0.1 -->
     <link rel="stylesheet" href="//unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
     <script src="//unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
@@ -36,14 +37,14 @@
 
 </head>
 <body>
-
-
     <div id="header">
         <nav class="menu">
             <ul >
-              <li><a href="/" class="active">Home</a></li>
-              <li><a href="faq.php">FAQ</a></li>
-              <li><a href="about.html">About</a></li>
+                <li><a href="/" class="active">Home</a></li>
+                <li><a href="faq.php">FAQ</a></li>
+                <li><a href="hswikilist.php">Hackerspace Census</a></li>
+                <li><a href="about.html">About</a></li>
+                <li style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" target=_blank><img src="/image/github-white.png" alt="Join us on Github"></a></li>
             </ul>
         </nav>
         <div style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" style=""><img src="/image/github-white.png" alt="Join us on Github"></a></div>
@@ -55,7 +56,7 @@
     <script>
         var map = L.map('map').locate({setView: true, maxZoom: 8});
 
-        //map.spin(true);
+        map.spin(true);
 
         //attributes for basemap credit (lower right hand corner annotation)
         var streetsAttr = 'Map tiles by Carto, under CC BY 3.0. Data by <a href="https://openstreetmap.org">OpenStreetMap</a>, under ODbL.';
@@ -232,7 +233,7 @@
 
 
         $(document).ajaxComplete(function (event, xhr, settings) {
-            //map.spin(false);
+            map.spin(false);
         });
 
     </script>

@@ -2,9 +2,14 @@
 *.sublime-workspace
 *.sublime-project
 
+
+# Composer components
+/vendor/
+
 #data files for this project
 database.db
 *.geojson
 settings.php
 test.php
 errorlog.txt
+cookie.txt

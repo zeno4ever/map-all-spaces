@@ -2,7 +2,8 @@
 
 include 'settings.php';
 
-require  './src/Medoo.php';
+//composer components
+require 'vendor/autoload.php';
 
 use Medoo\Medoo;
 
@@ -16,8 +17,8 @@ if (isset($databasefile)) {
 	exit;
 };
 
+//for mapall.space map
 $database->drop("space");
-
 $database->create("space", [
 	"source" => [
 		"VARCHAR(30)",
@@ -49,6 +50,37 @@ $database->create("space", [
 	],
 	"PRIMARY KEY (source,sourcekey)"
 ]);
+
+
+//check for hackerspace wiki 
+$database->drop("wikispace");
+$database->create("wikispace", [
+	"wikiurl" => [
+		"TEXT"
+	],
+	"name" => [
+		"TEXT"
+	],
+	"lastcurlerror" => [
+		"INTEGER"
+	],
+	"curlerrorcount" => [
+		"INTEGER"
+	],
+	"lastdataupdated" => [
+		"INTEGER",
+		"NOT NULL"
+	],
+	"emailsenddate" => [
+		"TEXT"
+	],
+	"status" => [
+		"TEXT"
+	],
+
+	"PRIMARY KEY (wikiurl)"
+]);
+
 
 $errorlog = $database->error();
 if ($errorlog[1] != 0) {

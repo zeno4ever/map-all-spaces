@@ -2,21 +2,24 @@
 <html lang="en-US">
 <head>
 	<link rel="stylesheet" href="/css/style.css" />
-	<script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <meta name="Map hackerspaces/fablabs/makerspaces " content="Dynamic map with all hackerspace, fablabs and makerspaces">
+	 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 	<title>Map all spaces - FAQ</title>
 </head>
 <body>
     <div id="header">
     <nav class="menu">
         <ul >
-          <li><a href="/" >Home</a></li>
-          <li><a href="faq.html" class="active">FAQ</a></li>
-          <li style="float:right"><a href="about.html">About</a></li>
+         	<li><a href="/" >Home</a></li>
+         	<li><a href="faq.html" class="active">FAQ</a></li>
+         	<li><a href="hswikilist.php">Hackerspace Census</a></li>
+         	<li><a href="about.html">About</a></li>
+	     	<li style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" target=_blank><img src="/image/github-white.png" alt="Join us on Github"></a></li>
         </ul>
      </nav>
 	</div>
 	<main id="content">
-		<div class="container">
+		<div class="content">
 			<h1>FAQ</h1>
 			<h2>What is this site?</h2>
 			<div>A dynamic map of all hacker/maker spaces and fablabs. There is already some map out there, but you have to register. After a while the map wil be outdated, so for this map there are several 'live' sources used to be always up todate. </div>
