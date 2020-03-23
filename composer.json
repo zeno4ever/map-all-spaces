@@ -1,0 +1,6 @@
+{
+    "require": {
+        "catfan/medoo": "^1.7",
+        "j7mbo/twitter-api-php": "^1.0"
+    }
+}
