@@ -58,9 +58,9 @@
 	</div>
 
 	<div class="content">
-	The wiki is a very nice tool so everyone can add their own space. The challenge is that everyone do this and data are not kept uptodate. To solve this some people of hackerspace.org started the <a href="https://wiki.hackerspaces.org/Hackerspace_Census_2019">Hackerspace Census</a> to check all entry's and set them to 'closed' when hackerspace doesn't exist any more.
+		The <a href="https://wiki.hackerspaces.org/List_of_Hacker_Spaces" target:_blank>wiki</a> is a very nice tool so everyone can add their own space. The challenge is that to ensure that the entry remain up to date in order for the list to remain accurate and relevant. To solve this some people from hackerspace.org started the <a href="https://wiki.hackerspaces.org/Hackerspace_Census_2019">Hackerspace Census</a> to check all entry's and set them to 'closed' when hackerspace doesn't exist any more.
 	<p>
-	I created a script that tries to automate this. For evere entry it wil:
+	I created a script that tries to automate this. For every entry it wil:
 	<ul>
 		<li>Check if site is still up. After 3 failed tests the entry wil be set to 'closed' and a email send.</li>
 		<li>Check if there is recent activity on one of the following places : Main site, Twitter, Mailinglist, Wiki, SpaceAPI, Newsfeed, Calenderfeed. If this is the case the entry on wiki is updated with remark that this is checked. If the activity is to long ago (> 2 years) entry will be set to status 'closed'.</li>
