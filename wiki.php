@@ -75,6 +75,11 @@ $log_path = './';
 $removeOlderThen = date("Y-m-d H:i",strtotime('-2 years'));;
 $httpHeaders = [];
 
+//
+echo 'Gevonden datum = '.getDateLastTweet('https://twitter.com/hackerspacekl');
+exit;
+
+
 // ** Login wiki **//
 //$wikiApi  = "https://test.wikipedia.org/w/api.php";
 $wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
@@ -142,17 +147,18 @@ function getHackerspacesOrgJson() {
 					//clear all  dates
 					$checkDate = array();
 
-					//get from http header
-					if ($siteUp['lastmodified']!='') {
-						$checkDate['httpLastModified'] = $siteUp['lastmodified'];
-						message('Site Last Modified (http headers) '.$siteUp['lastmodified']);
-					}
+					//get from http header - disables, to many false positives
+					// if ($siteUp['lastmodified']!='') {
+					// 	$checkDate['httpLastModified'] = $siteUp['lastmodified'];
+					// 	message('Site Last Modified (http headers) '.$siteUp['lastmodified']);
+					// }
 
 					//check wiki
 					if (isset($space['printouts']['Wiki'][0])) {
 						$hackerspaceWiki = $space['printouts']['Wiki'][0];
 						$checkDate['wiki'] = getDateLastWikiEdit($hackerspaceWiki);
 						message('Wiki '.$checkDate['wiki'].' - '.$space['printouts']['Wiki'][0]);
+
 					}
 					//check twitter
 					if (isset($space['printouts']['Twitter'][0])) {
@@ -534,18 +540,17 @@ function getDataLastSpacaAPI($spaceapiurl) {
 function getDateLastTweet($user) {
 	global $twitter;
 
-	$user = @end(explode('/', $twitter));
+	$tuser = @end(explode('/', $user));
 
 	$url = 'https://api.twitter.com/1.1/statuses/user_timeline.json';
-	$getfield = "?screen_name=$user&count=1";
+	$getfield = "?screen_name=$tuser&count=1";
 	$requestMethod = 'GET';
 
 	$result = json_decode($twitter->setGetfield($getfield)
 	             ->buildOauth($url, $requestMethod)
 	             ->performRequest(),JSON_OBJECT_AS_ARRAY);
-	//$datetime =  strtotime($result[0]['created_at']);
 
-	if(isset($result[0]['created_at'])) {
+	if(isset($result[0]['created_at']) or $tuser='') {
 		return date("Y-m-d H:i",strtotime($result[0]['created_at']));
 	} else {
 		message('**** twitter timeline empty?',5);

@@ -52,7 +52,7 @@
 			<div>Cool, thats nice of you. You could help me several ways :
 				<ul>
 					<li>If you like it consider a small (<a href="https://paypal.me/zeno4ever?locale.x=nl_NL">paypal (user zeno4ever)</a> or <a href="https://bunq.me/daveborghuis">iDeal (Bunq)</a>) donation. This will be used to cover hosting cost and drink a <a href="https://nl.wikipedia.org/wiki/Club-Mate">Club-Mate</a> to keep this site running.... </li>
-					<li>If an entry is invalid (e.g. hackerspace close) edit this at the source. You can easily find this to click on the icon and select 'source', this will redirect you straigt to source of the data.</li>
+					<li>If an entry is invalid (e.g. hackerspace close) edit this at the source. You can easily find this to click on the icon and select 'source', this will redirect you straigt to source of the data. See also the <a href="/hswikilist.php">'Hackerspace Census'</a> page.</li>
 					<li>Contribute with your knowledge, sourcecode of this project can be found at <a href="https://github.com/zeno4ever/map-all-spaces">Github</a></li>
 				</ul> 
 			</div>
