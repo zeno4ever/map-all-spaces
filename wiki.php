@@ -15,9 +15,9 @@ require 'vendor/autoload.php';
 
 require 'mapall_functions.php';
 
-$cliOptions = getopt('',['test','live','log::','count::','init','help']);
+$cliOptions = getopt('',['test','live','log::','count::','init','help','close::']);
 if (isset($cliOptions['help'])) {
-	echo "Usage update.php [options] \n --test    Testing, do all except mailind and update wiki\n --live    Real run inc. updates and sending mail\n --init   Empty database\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n";
+	echo "Usage update.php [options] \n --test    Testing, do all except mailind and update wiki\n --live    Real run inc. updates and sending mail\n --init   Empty database\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n   --close=$name\n";
 	 exit;
 };
 
@@ -42,6 +42,12 @@ if (isset($cliOptions['count'])) {
 message('Maxcount = '.$maxcount);
 
 
+//Have or live or test option. 
+if ( isset($cliOptions['close']) ) {
+	$space = $cliOptions['close'];
+
+};
+
 //Testing of checks
 //echo 'Newsfeed ='.getDateNewsFeed('https://sbg.chaostreff.at/feed.xml');
 //echo 'calenderfeed = '.getDataLastCalenderFeed('https://sbg.chaostreff.at/events.ics');
@@ -49,8 +55,6 @@ message('Maxcount = '.$maxcount);
 // var_dump($result['lastmodified']);
 // echo date("Y-m-d H:i",strtotime('Sat, 14 Mar 2020 16:35:31 GMT'));
 // exit;
-
-
 
 //database
 use Medoo\Medoo;
@@ -75,11 +79,6 @@ $log_path = './';
 $removeOlderThen = date("Y-m-d H:i",strtotime('-2 years'));;
 $httpHeaders = [];
 
-//
-echo 'Gevonden datum = '.getDateLastTweet('https://twitter.com/hackerspacekl');
-exit;
-
-
 // ** Login wiki **//
 //$wikiApi  = "https://test.wikipedia.org/w/api.php";
 $wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
@@ -87,14 +86,41 @@ $login_Token = getLoginToken();
 //message('Login token ='.$login_Token);
 loginRequest( $login_Token );
 $csrf_Token = getCSRFToken();
-//message('csrf token '.$csrf_Token);
 
 //For each hackerspace do 
-getHackerspacesOrgJson();
+//getHackerspacesOrgJson();
+
+//close one space
+//updateOneHackerSpace($space,'update');
 
 //all done, logout
 echo 'Logout'.PHP_EOL;
 logoutRequest($csrf_Token);
+
+
+function updateOneHackerSpace($space,$action) {
+	global $wikiApi ;
+	$wikitext = getWikiPage($space);
+
+	$email = substr($wikitext, strpos($wikitext, '|email=')+7);
+
+	switch ($action) {
+		case 'close':
+			sendEmail($email,$space,'https://wiki.hackerspaces.org/'.$space);
+			updateHackerspaceWiki($space,'close');
+			break;
+		case 'update':
+			//sendEmail($email,$space,'https://wiki.hackerspaces.org/'.$space);
+			updateHackerspaceWiki($space,'update');
+			break;
+		default:
+			message('ERROR : Action not defined!!',5);
+			break;
+	}
+	// sendEmail($email,$space,'https://wiki.hackerspaces.org/'.$space);
+	// updateHackerspaceWiki($space,'close');
+
+}
 
 
 function getHackerspacesOrgJson() {
@@ -115,7 +141,7 @@ function getHackerspacesOrgJson() {
         foreach ($result as $space) {
         	//var_dump($space);
 
-        	$statistics['total']+=1;
+        	//$statistics['total']+=1;
 
             $fullname = $space['fulltext'];
             $lastupdate = date_create(date("Y-m-d\TH:i:s", $space['printouts']['Modification date'][0]['timestamp']));
@@ -124,22 +150,20 @@ function getHackerspacesOrgJson() {
 	        $source = $space['fullurl'];
 
             message('.......... ');
-            message('** Space '.$fullname.' Last modified '.$lastupdate->format('Y-m-d').' days '.$interval.' **',4);
+            message('** Space '.$fullname.' Last modified '.$lastupdate->format('Y-m-d').' days '.$interval.' **  '.$source,4);
 
             $url = (isset($space['printouts']['Website'][0])) ? $space['printouts']['Website'][0] : null;
 
             message('Url = '.$url);
             //check if fullname and url match
 
-
             //only check if no modification in last year
             if ($interval > 356 ) {
+            	$statistics['total']+=1;
        		
-	            //$spaceapi = (isset($space['printouts']['SpaceAPI'][0])) ?  $space['printouts']['SpaceAPI'][0]  : '';
-
 	            $email = (isset($space['printouts']['Email'][0])) ?  $space['printouts']['Email'][0]  : '';
 
-				$siteUp = getCurl($url,null,30); //wait long time for responce 
+				$siteUp = getCurl($url,null,60); //wait long time for responce 
 
 				if ($siteUp['error']==0) {
 					message('Site up check on dates.');
@@ -147,7 +171,7 @@ function getHackerspacesOrgJson() {
 					//clear all  dates
 					$checkDate = array();
 
-					//get from http header - disables, to many false positives
+					//get from http header - disabled, to many false positives
 					// if ($siteUp['lastmodified']!='') {
 					// 	$checkDate['httpLastModified'] = $siteUp['lastmodified'];
 					// 	message('Site Last Modified (http headers) '.$siteUp['lastmodified']);
@@ -158,8 +182,8 @@ function getHackerspacesOrgJson() {
 						$hackerspaceWiki = $space['printouts']['Wiki'][0];
 						$checkDate['wiki'] = getDateLastWikiEdit($hackerspaceWiki);
 						message('Wiki '.$checkDate['wiki'].' - '.$space['printouts']['Wiki'][0]);
-
 					}
+
 					//check twitter
 					if (isset($space['printouts']['Twitter'][0])) {
 						$checkDate['twitter'] = getDateLastTweet($space['printouts']['Twitter'][0] );
@@ -196,15 +220,13 @@ function getHackerspacesOrgJson() {
 						if ($date > $lastUpdateDate) {
 							$lastUpdateDate = $date;
 						};
-						//message('Check on '.$source.' datum '.$date);
 					};
 					message('Last Activity was on '. $lastUpdateDate,2);
 
 					if ($lastUpdateDate==0) {
 			        	$statistics['manual']+=1;
 
-						message('No activity for space, mnual check.',5);
-						message('Send email to '.$email,4);
+						message('No activity for space, manual check.',5);
 
 						updateDatabase($source,$fullname,0,'manual');
 
@@ -231,26 +253,33 @@ function getHackerspacesOrgJson() {
 					}
 
 				} else {
-					$statistics['down']+=1;
+					if (empty($url)) {
+						message('No site, nothing to check.');
+					} else {
+						$statistics['down']+=1;
 
-					$count = updateDatabase($source,$fullname,$siteUp['error'],'down');
-					message('Site down Error: ['.$siteUp['error'].'] Checked times :'.$count,4);
+						$count = updateDatabase($source,$fullname,$siteUp['error'],'down');
+						message('Site down Error: ['.$siteUp['error'].'] Checked times :'.$count,4);
 
-
-					if ($count >3) {
-						message('Site down for 3 x -- Close space',5);
-						if (!$testrun) {
-							sendEmail($email,$fullname,$source);
-							updateHackerspaceWiki($fullname,'close');
+						if ($count >3) {
+							message('Site down for 3 x -- Close space and send email to '.$email,5);
+							if (!$testrun) {
+								sendEmail($email,$fullname,$source);
+								updateHackerspaceWiki($fullname,'close');
+							};
 						};
-					};
+
+					}
+
 
 				};
 
+            } else {
+            	$statistics['skipped']+=1;
             };
 
 	        if ($maxcount!=0 and $statistics['total']>=$maxcount) {
-	    	    message('Processed :'.$statistics['total'].' Down :'.$statistics['down'].' Manual :'.$statistics['manual'].' Active :'.$statistics['active'].' Inactive :'.$statistics['inactive']);
+	    	    message('Processed :'.$statistics['total'].' Down :'.$statistics['down'].' Manual :'.$statistics['manual'].' Active :'.$statistics['active'].' Inactive :'.$statistics['inactive'].' Skipped :'.$statistics['skipped']);
 	            return;
 	        };
 
@@ -262,7 +291,7 @@ function getHackerspacesOrgJson() {
         $result = getPageHackerspacesOrg($req_results,$req_page);
     };
     //all done.. 
-    message('Processed :'.$statistics['total'].' Down :'.$statistics['down'].' Manual :'.$statistics['manual'].' Active :'.$statistics['active'].' Inactive :'.$statistics['inactive']);
+    message('Processed :'.$statistics['total'].' Down :'.$statistics['down'].' Manual :'.$statistics['manual'].' Active :'.$statistics['active'].' Inactive :'.$statistics['inactive'].' Skipped :'.$statistics['skipped']);
 };
 
 
@@ -271,14 +300,16 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 
     $offset = $req_page*$req_results;
 
-    if ($testrun) {
+    if ($testrun && false) {
 		$sorting = 'desc'; //for testing, newest first
     } else {
 	    $sorting = 'asc';    	
     };
 
+    $sorting = 'asc';    	
+
     //Live
-    $url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=$sorting/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/-3FCalendarFeed/-3FFeed/-3FNewsfeed/-3FTwitter/-3FFacebook/-3FEmail/-3FMailinglist/mainlabel=/prettyprint=true/unescape=true";
+    $url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=$sorting/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/-3FCalendarFeed/-3FFeed/-3FNewsfeed/-3FTwitter/-3FFacebook/-3FEmail/-3FMailinglist/mainlabel=/prettyprint=true/unescape=true/s-maxage=0";
 
 
     $getWikiJsonResult = getJSON($url);
@@ -415,13 +446,19 @@ function getWikiPage($spaceURLname) {
 
 // Step 4: POST request to edit a page
 function updateHackerspaceWiki( $spaceURLname , $action ) {
-	global $wikiApi ;
-	global $csrf_Token;
+	global $wikiApi, $csrf_Token;
 
 	//https://wiki.hackerspaces.org/Special:ApiSandbox#action=edit&title=TkkrLab&appendtext=%22Hello%20World%22&format=json
 
 	//get current page
 	$wikitext = getWikiPage($spaceURLname);
+
+	//check on current status, should be active. If not give ERROR
+	$currentState = substr($wikitext, strpos($wikitext, '|status=')+8,6);
+	if ($currentState != 'active') {
+		message('ERROR: Wiki for '.$spaceURLname.' is '.$currentState.'. No changes made ',5);
+		return;
+	}
 
 	if ($action == 'close') {
 		$newpage = str_replace('|status=active','|status=closed',$wikitext);
@@ -445,13 +482,11 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 	$result = getJSON($url,$params);
 
 	if (isset($result['json']['error']) or $result['json']['edit']['result']=='Failure') {
-		var_dump( $result['json']['error']);
+		//var_dump( $result['json']['error']);
 	}
 
 	//solve captcha 
 	if ($result['json']['edit']['result']=='Failure' and isset($result['json']['edit']['captcha']) ) {
-
-		echo 'Solve Chapta'.PHP_EOL;
 
 		$captchparams = [
 			"captchaid" => $result["json"]['edit']['captcha']['id'],
@@ -464,9 +499,22 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 		$result = getJSON($url,$params);
 
 		if (isset($result['json']['error']) or $result['json']['edit']['result']=='Failure') {
-			var_dump( $result);
+			//var_dump( $result);
 		};
 	}
+
+
+	//clear chache / purge
+	//https://www.mediawiki.org/wiki/API:Purge
+	$params = [
+		"action" => "purge",
+		"titles" => $spaceURLname,
+		"format" => "json"
+	];
+
+	$url = $wikiApi ;// . "?" . http_build_query( $params );
+	$result = getJSON($url,$params);
+
 }
 
 
@@ -660,10 +708,15 @@ function getDataLastCalenderFeed($ical) {
 
 
 function sendEmail($email,$fullname,$url) {
+		if ($testrun) {
+			$email = 'dave@daveborghuis.nl';
+		}
+		if (empty($email)) {
+			return false;
+		};
         $headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
         $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We tryed to acces your site several times but got http errors. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More infomation about this proces can be found on <a href=\"https:\\\\mapall.space/faq.php\">Mapall site</a><br>Regards,<br>Dave Borghuis";
         $mailsend = mail( 
-            //'dave@daveborghuis.nl', //to
             $email,
             'Hackerspaces.org entry for '.$fullname ,
             $mailmessage,
