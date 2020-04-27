@@ -1,6 +1,4 @@
 /*
-Theme Name: basichackerspacesnl
-Description: Custom child theme for hackerspaces
 Version: 1.0.1
 Author:Dave Borghuis aka zeno4ever
 Author URI: http://daveborghuis.nl/
@@ -22,7 +20,6 @@ body {
 }
 
 /* For all navagation */
-
 nav {
     position: fixed;
     height: 50px;
@@ -123,3 +120,23 @@ body > div.container {
 .content {
   padding: 20px 50px 50px 30px;
 }
+
+.pwform {
+  float: right;
+  padding-top: 10px;  
+}
+
+/* hackerspace wiki consensus */
+.wiki table {
+  border: 0p;
+}
+.wiki th {
+  color: white;
+  background: black;
+}
+.wiki th, td { 
+  text-align: left; 
+  padding: 8px;
+}
+.wiki tr:nth-child(odd) {background: #EEE;}
+.wiki tr:nth-child(even) {background: #CCC}

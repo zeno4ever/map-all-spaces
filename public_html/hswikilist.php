@@ -1,3 +1,16 @@
+<?php
+
+require '../settings.php'; //get secret settings
+require '../vendor/autoload.php';
+require '../wiki.php';
+
+if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd),0,20)) {
+	$validUser = true;		
+} else {
+	$validUser = false;		
+};
+
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -13,12 +26,13 @@
 
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>    
 	<script type="text/javascript" >
-		function wikiupdate(hackerspace) 
+		function wikiupdate(hackerspace,action) 
 		{
 			$.post("wikiupdate.php",
 				{
 				hackerspace: hackerspace,
-				status: "checked"
+				status: "checked",
+				action: action
 				}	
 				)  
 				.done(function() {
@@ -30,17 +44,6 @@
 			  $(event.target || event.srcElement).parents('tr').hide();
 		};
 	</script>
-	<style>
-		table {
-			border: 0p;
-		}
-		 th, td { 
-            text-align: left; 
-            padding: 8px; 
-        } 
-
-	  tr:nth-child(even) {background: #DDD}
-	</style>
   </head>
   <body>
   	<main id="content">
@@ -56,49 +59,50 @@
 	    </nav>
 	    <div style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" style=""><img src="/image/github-white.png" alt="Join us on Github"></a></div>
 	</div>
+	<div class="pwform">
+		<?php 
+		if (!$validUser) {
+			echo '	
+			<form action="login.php" method="get">
+				<input type="password" id="pwd" name="pwd" placeholder="Password">
+				<input type="submit" style="position: absolute; left: -9999px">
+			</form>
+			';
+		}
+		?>
+	</div>
 
 	<div class="content">
 		The <a href="https://wiki.hackerspaces.org/List_of_Hacker_Spaces" target:_blank>wiki</a> is a very nice tool so everyone can add their own space. The challenge is that to ensure that the entry remain up to date in order for the list to remain accurate and relevant. To solve this some people from hackerspace.org started the <a href="https://wiki.hackerspaces.org/Hackerspace_Census_2019">Hackerspace Census</a> to check all entry's and set them to 'closed' when hackerspace doesn't exist any more.
 	<p>
 	I created a script that tries to automate this. For every entry it wil:
 	<ul>
-		<li>Check if site is still up. After 3 failed tests the entry wil be set to 'closed' and a email send.</li>
-		<li>Check if there is recent activity on one of the following places : Main site, Twitter, Mailinglist, Wiki, SpaceAPI, Newsfeed, Calenderfeed. If this is the case the entry on wiki is updated with remark that this is checked. If the activity is to long ago (> 2 years) entry will be set to status 'closed'.</li>
+		<li>Check if site is still up. After 3 failed tests the entry wil be set to 'closed' and a email will be send.</li>
+		<li>Check if there is recent activity on one of the following places : Twitter, Mailinglist, Wiki, SpaceAPI, Newsfeed and Calenderfeed. If this is the case the entry on wiki is updated with remark that this is checked. If the activity is to long ago (> 2 years) entry will be set to status 'closed' and email will be send.</li>
 		<li>Left over are the entrys that have to be checked manual.</li>
 	</ul>
-	Below you will find a list of all the hackerspace entries that have to be checked manual. If you want to help pick an entry, check what the status is of the hackerspace. If its still exist add (hidden) tekst to the wiki like '&lt!-- Checked by person $yourname --&gt' or set the status to 'closed'. 	<p>
+	Below you will find a list of all the hackerspace entries that have to be checked manual. If you want to help pick an entry, check what the status is of the hackerspace. If its still exist add (hidden) tekst to the wiki like '&lt!-- set to $status for $reason, Checked by person $yourname on $date --&gt' or set the status to 'closed'.<p>
 <?php
-	require "../settings.php"; //get secret settings
-
-	//twitter feed
-	require '../vendor/autoload.php';
-
-	use Medoo\Medoo;
-
-	if (isset($databasefile)) {
-		$database = new Medoo([
-		    'database_type' => 'sqlite',
-		    'database_file' => $databasefile
-		]);
-	} else {	
-		echo 'Set $databasefile in settings.php';
-		exit;
-	};
 
 	$result = $database->select("wikispace", '*' ,["status" => 'manual']);
 
 	shuffle($result);
 
-	echo '<h4>To check '.count($result).' hackerspaces.</h4>';
+	echo '<h4>Right now there are '.count($result).' hackerspaces to be check manualy.</h4>';
 	if ($result) {
-		echo '<table><tr><th>Hackerspace Name</th><th>Status</th><th></th></tr>';
+		echo '<table class="wiki"><tr><th colspan="3">Hackerspace Name</th></tr>';
 		foreach ($result as $space) {
 			echo '<tr>';
 			echo '<td><a href="'.$space['wikiurl'].'" target="_blank">'.$space['name'].'</a></td>';
-			echo '<td>'.$space['status'].'</td>';
-			echo '<td><button type="button" onclick="wikiupdate(`'.$space['name'].'`);">Checked</button></td>';
-			echo '</tr>';
-			$line+=1;
+
+			//if loged in 
+			if ( $validUser ) {
+				echo '<td><button type="button" onclick="wikiupdate(`'.$space['name'].'`,`close`);">Close</button></td>';
+				echo '<td><button type="button" onclick="wikiupdate(`'.$space['name'].'`,`update`);">Update</button></td>';
+				echo '</tr>';
+			} else {
+				echo '<td><button type="button" onclick="wikiupdate(`'.$space['name'].'`);">Checked</button></td>';
+			}
 		};
 		echo '</table>';
 	} else {
