@@ -1,60 +1,11 @@
 <?php
 /*
-
-	To help to keep the hackerspaces.org a bit uptodate I 
-
-	See also : 	https://wiki.hackerspaces.org/Hackerspace_Census_2019
-
-	Author : Dave Borghuis
+Author : Dave Borghuis
+See also : 	https://wiki.hackerspaces.org/Hackerspace_Census_2019
 */
-
-include "./settings.php"; //get secret settings
-
-//composer components
 require 'vendor/autoload.php';
-
+require 'settings.php'; //get secret settings
 require 'mapall_functions.php';
-
-$cliOptions = getopt('',['test','live','log::','count::','init','help','close::']);
-if (isset($cliOptions['help'])) {
-	echo "Usage update.php [options] \n --test    Testing, do all except mailind and update wiki\n --live    Real run inc. updates and sending mail\n --init   Empty database\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n   --close=$name\n";
-	 exit;
-};
-
-
-
-//Have or live or test option. 
-if (!(isset($cliOptions['test']) or isset($cliOptions['live']))) {
-	message('Use or test of live funtion.');
-	exit;
-};
-
-//testing
-if (isset($cliOptions['test'])) {
-	$testrun = true;
-};
-
-if (isset($cliOptions['count'])) {
-	$maxcount =  $cliOptions['count'];
-} else {
-	$maxcount=0;
-};
-message('Maxcount = '.$maxcount);
-
-
-//Have or live or test option. 
-if ( isset($cliOptions['close']) ) {
-	$space = $cliOptions['close'];
-
-};
-
-//Testing of checks
-//echo 'Newsfeed ='.getDateNewsFeed('https://sbg.chaostreff.at/feed.xml');
-//echo 'calenderfeed = '.getDataLastCalenderFeed('https://sbg.chaostreff.at/events.ics');
-// $result=getCurl('https://sbg.chaostreff.at');
-// var_dump($result['lastmodified']);
-// echo date("Y-m-d H:i",strtotime('Sat, 14 Mar 2020 16:35:31 GMT'));
-// exit;
 
 //database
 use Medoo\Medoo;
@@ -64,38 +15,87 @@ if (isset($databasefile)) {
 	    'database_type' => 'sqlite',
 	    'database_file' => $databasefile
 	]);
-	message('Database is setup');
 } else {	
 	echo 'Set $databasefile in settings.php';
 	exit;
 };
 
-//twitter API
-$twitter = new TwitterAPIExchange($twitterSettings);
 
-$loglevel=0;
-$loglevelfile=0;
-$log_path = './';
-$removeOlderThen = date("Y-m-d H:i",strtotime('-2 years'));;
-$httpHeaders = [];
+if (php_sapi_name()=='cli') {
 
-// ** Login wiki **//
-//$wikiApi  = "https://test.wikipedia.org/w/api.php";
-$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
-$login_Token = getLoginToken();
-//message('Login token ='.$login_Token);
-loginRequest( $login_Token );
-$csrf_Token = getCSRFToken();
+	$cliOptions = getopt('',['test','live','log::','count::','init','help','close::']);
+	if (isset($cliOptions['help'])) {
+		echo "Usage update.php [options] \n --test    Testing, do all except mailind and update wiki\n --live    Real run inc. updates and sending mail\n --init   Empty database\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n   --close=$name\n";
+		 exit;
+	};
 
-//For each hackerspace do 
-//getHackerspacesOrgJson();
+	//Have or live or test option. 
+	if (!(isset($cliOptions['test']) or isset($cliOptions['live']))) {
+		message('Use or test of live funtion.'.php_sapi_name());
+		exit;
+	};
 
-//close one space
-//updateOneHackerSpace($space,'update');
+	//testing
+	if (isset($cliOptions['test'])) {
+		$testrun = true;
+	};
 
-//all done, logout
-echo 'Logout'.PHP_EOL;
-logoutRequest($csrf_Token);
+	if (isset($cliOptions['count'])) {
+		$maxcount =  $cliOptions['count'];
+	} else {
+		$maxcount=0;
+	};
+	message('Maxcount = '.$maxcount);
+
+	//Have or live or test option. 
+	if ( isset($cliOptions['close']) ) {
+		$space = $cliOptions['close'];
+	};
+
+	//twitter API
+	$twitter = new TwitterAPIExchange($twitterSettings);
+
+	$loglevel=0;
+	$loglevelfile=0;
+	$log_path = './';
+	$removeOlderThen = date("Y-m-d H:i",strtotime('-2 years'));;
+	$httpHeaders = [];
+
+	// ** Login wiki **//
+	//$wikiApi  = "https://test.wikipedia.org/w/api.php";
+	$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
+	$login_Token = getLoginToken();
+	//message('Login token ='.$login_Token);
+	loginRequest( $login_Token );
+	$csrf_Token = getCSRFToken();
+
+	//For each hackerspace do 
+	getHackerspacesOrgJson();
+
+	//close one space
+	//updateOneHackerSpace($space,'update');
+
+	//all done, logout
+	echo 'Logout'.PHP_EOL;
+	logoutRequest($csrf_Token);
+
+
+} else {
+	//call from web
+	$loglevel=0;
+	$loglevelfile=0;
+	$log_path = './';
+	$removeOlderThen = date("Y-m-d H:i",strtotime('-2 years'));;
+	$httpHeaders = [];
+
+	// ** Login wiki **//
+	//$wikiApi  = "https://test.wikipedia.org/w/api.php";
+	$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
+	$login_Token = getLoginToken();
+	//message('Login token ='.$login_Token);
+	loginRequest( $login_Token );
+	$csrf_Token = getCSRFToken();
+};
 
 
 function updateOneHackerSpace($space,$action) {
@@ -117,9 +117,6 @@ function updateOneHackerSpace($space,$action) {
 			message('ERROR : Action not defined!!',5);
 			break;
 	}
-	// sendEmail($email,$space,'https://wiki.hackerspaces.org/'.$space);
-	// updateHackerspaceWiki($space,'close');
-
 }
 
 

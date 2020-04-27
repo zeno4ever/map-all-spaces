@@ -9,6 +9,9 @@ $error_logfile = '/project/errorlog.txt';
 $botUser = 'user@botuser'; 
 $botPasswd ='';
 
+//login for wiki close/update
+$wikiPasswd =''; //secret password to enable wiki edit shortcuts
+
 //Twitter settings
 $twitterSettings = array(
     'oauth_access_token' => "",
