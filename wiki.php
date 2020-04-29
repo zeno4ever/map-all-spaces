@@ -29,6 +29,14 @@ if (php_sapi_name()=='cli') {
 		 exit;
 	};
 
+	if (isset($cliOptions['init'])) {
+	    $database->delete('wikispace',Medoo::Raw('WHERE true'));
+	    // if(!file_exists ( $geojson_path.'errorlog.txt' )) {
+	    //     unlink($geojson_path.'errorlog.txt');
+	    // }
+	    echo('Init : database empty and logfile removed');
+	};
+
 	//Have or live or test option. 
 	if (!(isset($cliOptions['test']) or isset($cliOptions['live']))) {
 		message('Use or test of live funtion.'.php_sapi_name());
@@ -47,10 +55,7 @@ if (php_sapi_name()=='cli') {
 	};
 	message('Maxcount = '.$maxcount);
 
-	//Have or live or test option. 
-	if ( isset($cliOptions['close']) ) {
-		$space = $cliOptions['close'];
-	};
+
 
 	//twitter API
 	$twitter = new TwitterAPIExchange($twitterSettings);
@@ -69,11 +74,15 @@ if (php_sapi_name()=='cli') {
 	loginRequest( $login_Token );
 	$csrf_Token = getCSRFToken();
 
-	//For each hackerspace do 
-	getHackerspacesOrgJson();
 
-	//close one space
-	//updateOneHackerSpace($space,'update');
+	//Have or live or test option. 
+	if ( isset($cliOptions['close']) ) {
+		$space = $cliOptions['close'];
+		updateOneHackerSpace($space,'update');
+	} else {
+		//For each hackerspace do 
+		getHackerspacesOrgJson();
+	};
 
 	//all done, logout
 	echo 'Logout'.PHP_EOL;
@@ -91,15 +100,21 @@ if (php_sapi_name()=='cli') {
 	// ** Login wiki **//
 	//$wikiApi  = "https://test.wikipedia.org/w/api.php";
 	$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
-	$login_Token = getLoginToken();
-	//message('Login token ='.$login_Token);
-	loginRequest( $login_Token );
-	$csrf_Token = getCSRFToken();
+
+
 };
 
 
 function updateOneHackerSpace($space,$action) {
-	global $wikiApi ;
+	global $wikiApi,$login_Token,$csrf_Token ;
+
+	if (empty($login_Token)) {
+		$login_Token = getLoginToken();
+		//message('Login token ='.$login_Token);
+		loginRequest( $login_Token );
+		$csrf_Token = getCSRFToken();
+	}
+
 	$wikitext = getWikiPage($space);
 
 	$email = substr($wikitext, strpos($wikitext, '|email=')+7);
@@ -162,8 +177,14 @@ function getHackerspacesOrgJson() {
 
 				$siteUp = getCurl($url,null,60); //wait long time for responce 
 
-				if ($siteUp['error']==0) {
-					message('Site up check on dates.');
+
+				//TODO : if site not defined still check other media (eg twitter etc.)
+				if ($siteUp['error']==0 or empty($url)) {
+					if (empty($url)) {
+						message('No site, check on dates.');
+					} else {
+						message('Site up check on dates.');
+					}
 
 					//clear all  dates
 					$checkDate = array();
@@ -250,24 +271,18 @@ function getHackerspacesOrgJson() {
 					}
 
 				} else {
-					if (empty($url)) {
-						message('No site, nothing to check.');
-					} else {
-						$statistics['down']+=1;
+					$statistics['down']+=1;
 
-						$count = updateDatabase($source,$fullname,$siteUp['error'],'down');
-						message('Site down Error: ['.$siteUp['error'].'] Checked times :'.$count,4);
+					$count = updateDatabase($source,$fullname,$siteUp['error'],'down');
+					message('Site down Error: ['.$siteUp['error'].'] Checked times :'.$count,4);
 
-						if ($count >3) {
-							message('Site down for 3 x -- Close space and send email to '.$email,5);
-							if (!$testrun) {
-								sendEmail($email,$fullname,$source);
-								updateHackerspaceWiki($fullname,'close');
-							};
+					if ($count >3) {
+						message('Site down for 3 x -- Close space and send email to '.$email,5);
+						if (!$testrun) {
+							sendEmail($email,$fullname,$source);
+							updateHackerspaceWiki($fullname,'close');
 						};
-
-					}
-
+					};
 
 				};
 
