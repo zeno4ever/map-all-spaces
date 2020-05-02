@@ -20,6 +20,8 @@ if (isset($databasefile)) {
 	exit;
 };
 
+$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
+
 
 if (php_sapi_name()=='cli') {
 
@@ -57,6 +59,22 @@ if (php_sapi_name()=='cli') {
 
 
 
+	// $url = getCurl('https://nerdbridge.de');
+	// $siteUp = getCurl($url);
+	// //$date = getDateSiteAlternativeLink($site['result']);
+
+	// //is name of hacker space mentioned in html?
+	// $namefound = substr_count(strtoupper($siteUp['result']),str_replace('_',' ',strtoupper($fullname)));
+	// message('Found name in stite '.$namefound,0);
+
+	// if (!empty($url) and $namefound!=0 and len($siteUp['result'])>100) {
+	// 	$checkDate['altLink'] = getDateSiteAlternativeLink($siteUp['result']);
+	// 	if (!empty($checkDate['altLink'])) {
+	// 		message('Alternative Link (rss)'.$checkDate['altLink'],0);
+	// 	};
+	// };
+	// exit;
+
 	//twitter API
 	$twitter = new TwitterAPIExchange($twitterSettings);
 
@@ -68,7 +86,7 @@ if (php_sapi_name()=='cli') {
 
 	// ** Login wiki **//
 	//$wikiApi  = "https://test.wikipedia.org/w/api.php";
-	$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
+	//$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
 	$login_Token = getLoginToken();
 	//message('Login token ='.$login_Token);
 	loginRequest( $login_Token );
@@ -99,7 +117,6 @@ if (php_sapi_name()=='cli') {
 
 	// ** Login wiki **//
 	//$wikiApi  = "https://test.wikipedia.org/w/api.php";
-	$wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
 
 
 };
@@ -117,7 +134,16 @@ function updateOneHackerSpace($space,$action) {
 
 	$wikitext = getWikiPage($space);
 
-	$email = substr($wikitext, strpos($wikitext, '|email=')+7);
+	if (strpos($wikitext, '|email=')>0) {
+		$email = substr($wikitext, strpos($wikitext, '|email=')+7);
+		$email = substr($email,0,strpos($email, '|')-1);
+	} elseif(strpos($wikitext,'|residencies_contact=')>0) {
+		$email = substr($wikitext, strpos($wikitext, '|residencies_contact=')+21);
+		$email = substr($email,0,strpos($email, '|')-1);
+	} else {
+		$email = '';
+	}
+
 
 	switch ($action) {
 		case 'close':
@@ -180,14 +206,35 @@ function getHackerspacesOrgJson() {
 
 				//TODO : if site not defined still check other media (eg twitter etc.)
 				if ($siteUp['error']==0 or empty($url)) {
+
+					//clear all  dates
+					$checkDate = array();
+
 					if (empty($url)) {
 						message('No site, check on dates.');
 					} else {
 						message('Site up check on dates.');
-					}
 
-					//clear all  dates
-					$checkDate = array();
+						// //is name of hacker space mentioned in html?
+
+						// $namefound = substr_count(strtoupper($siteUp['result']),str_replace('_',' ',strtoupper($fullname)));
+						// message('Found name in stite '.$namefound,0);
+
+						// // $fullname replace _ with ' '
+						// // find $fullname in $siteUp['respons'];
+						// echo 'site *** ';
+						// //var_dump($siteUp['result']);
+
+						// echo ' *** end site'.PHP_EOL;
+
+						// if (!empty($url) and $namefound!=0 and strlen($siteUp['result'])>100) {
+						// 	$checkDate['altLink'] = getDateSiteAlternativeLink($siteUp['result']);
+						// 	if (!empty($checkDate['altLink'])) {
+						// 		message('Alternative Link (rss)'.$checkDate['altLink'],0);
+						// 	};
+						// };
+
+					}
 
 					//get from http header - disabled, to many false positives
 					// if ($siteUp['lastmodified']!='') {
@@ -318,7 +365,7 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 	    $sorting = 'asc';    	
     };
 
-    $sorting = 'asc';    	
+    //$sorting = 'asc';    	
 
     //Live
     $url = "https://wiki.hackerspaces.org/Special:Ask/format=json/limit=$req_results/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/sort=Modification-20date/order=$sorting/offset=$offset/-5B-5BCategory:Hackerspace-5D-5D-20-5B-5BHackerspace-20status::active-5D-5D-20-5B-5BHas-20coordinates::+-5D-5D/-3F-23/-3FModification-20date/-3FEmail/-3FWebsite/-3FCity/-3FPhone/-3FNumber-20of-20members/-3FSpaceAPI/-3FLocation/-3FCalendarFeed/-3FFeed/-3FNewsfeed/-3FTwitter/-3FFacebook/-3FEmail/-3FMailinglist/mainlabel=/prettyprint=true/unescape=true/s-maxage=0";
@@ -515,7 +562,6 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 		};
 	}
 
-
 	//clear chache / purge
 	//https://www.mediawiki.org/wiki/API:Purge
 	$params = [
@@ -656,13 +702,10 @@ function getDateLastMailManPost($mailinglist){
 		if (substr($mailinglist,0,5)=='http:') {
 			$mailinglist = 'https:'.substr($mailinglist,5);	
 		}
-		//https://groups.google.com/forum/feed/milwaukeemakerspace/msgs/rss_v2_0.xml?num=1
 		//convert url to rss feed
 		if (strpos($mailinglist,'/group/')>0) {
-			//http://groups.google.com/group/milwaukeemakerspace
 			$googlefeed= str_replace('/group/','/forum/feed/',$mailinglist).'/msgs/rss_v2_0.xml?num=1';
 		} else {
-			//https://groups.google.com/forum/#!forum/pumping-station-one-public
 			$googlefeed= str_replace('/#!forum/','/feed/',$mailinglist).'/msgs/rss_v2_0.xml?num=1';
 		}
 		$result = getCurl($googlefeed);
@@ -670,11 +713,9 @@ function getDateLastMailManPost($mailinglist){
 			$xml =simplexml_load_string($result['result'],'SimpleXMLElement',LIBXML_NOERROR);
 			return date("Y-m-d H:i",strtotime($xml->channel->item->pubDate));
 		} else {
-			//message('Newsfeed google group not found.'.$feed);
 			return null;
 		}
 	} else {
-		//message('Mailinglist not known.'.$mailinglist,2);
 		return null;
 	}
 }
@@ -719,6 +760,47 @@ function getDataLastCalenderFeed($ical) {
 }
 
 
+function getDateSiteAlternativeLink($site) {
+	//$url = getCurl($url,null,20);
+	//$checkDate = array();
+					
+	libxml_use_internal_errors(true);
+	$DOMfile = new DomDocument();
+	$DOMfile->loadHTML($site);
+	$xml = simplexml_import_dom($DOMfile);
+	//var_dump($xml->head->link);
+	foreach ( $xml->head->link as $link ) {
+		message('Link found'.print_r($link));
+	    if ( $link['rel'] == 'alternate' ) {
+	    	$type = (string)$link['type'];
+	        $self_link = (string)$link['href'];
+	        message(' Found '.$self_link.' type ='.$type,0);
+	        if ($type == 'application/rss+xml' or $type == 'application/atom+xml') {
+	        	$founddate = getDateNewsFeed($self_link);
+    	      	message('Date = '.$founddate.' Found '.$self_link.' type ='.$type,	0);
+	        	if ($founddate > $checkDate) {
+	        		$checkDate = $founddate;
+	        	}
+	        	//$foundnum +=1;
+            	//$checkDate[$foundnum] = getDateNewsFeed($self_link);
+	        } 
+	    }
+    	return $checkDate;
+	}
+
+	//do all the check
+	// $lastUpdateDate = 0;
+	// foreach ($checkDate as $source => $date) {
+	// 	if ($date > $lastUpdateDate) {
+	// 		$lastUpdateDate = $date;
+	// 	};
+	// };
+
+	// return $lastUpdateDate;
+
+};
+
+
 function sendEmail($email,$fullname,$url) {
 		if ($testrun) {
 			$email = 'dave@daveborghuis.nl';
@@ -727,7 +809,7 @@ function sendEmail($email,$fullname,$url) {
 			return false;
 		};
         $headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
-        $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We tryed to acces your site several times but got http errors. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More infomation about this proces can be found on <a href=\"https:\\\\mapall.space/faq.php\">Mapall site</a><br>Regards,<br>Dave Borghuis";
+        $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We tryed to acces your site several times but got http errors. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More information about this proces can be found on <a href=\"https:\\\\mapall.space\\hswikilist.php\">Mapall site</a><br>Regards,<br>Dave Borghuis";
         $mailsend = mail( 
             $email,
             'Hackerspaces.org entry for '.$fullname ,
