@@ -64,21 +64,21 @@ $database->create("wikispace", [
 	"lastcurlerror" => [
 		"INTEGER"
 	],
-	"curlerrorcount" => [
-		"INTEGER"
-	],
+	// "curlerrorcount" => [
+	// 	"INTEGER"
+	// ],
 	"lastdataupdated" => [
-		"INTEGER",
+		"DATETIME",
 		"NOT NULL"
 	],
-	"emailsenddate" => [
-		"TEXT"
-	],
+	// "emailsenddate" => [
+	// 	"TEXT"
+	// ],
 	"status" => [
 		"TEXT"
 	],
 
-	"PRIMARY KEY (wikiurl)"
+	"PRIMARY KEY (wikiurl,lastdataupdated)"
 ]);
 
 

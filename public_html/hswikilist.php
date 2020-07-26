@@ -77,14 +77,15 @@ if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd),0,20)) {
 	<p>
 	I created a script that tries to automate this. For every entry it wil:
 	<ul>
-		<li>Check if site is still up. After 3 failed tests the entry wil be set to 'closed' and a email will be send.</li>
-		<li>Check if there is recent activity on one of the following places : Twitter, Mailinglist, Wiki, SpaceAPI, Newsfeed and Calenderfeed. If this is the case the entry on wiki is updated with remark that this is checked. If the activity is to long ago (> 2 years) entry will be set to status 'closed' and email will be send.</li>
+		<li>Check if site is still up. After 3 failed tests the entry wil be set to 'suspected inactive' and a email will be send.</li>
+		<li>Check if there is recent activity on one of the following places : Site (via rss feeds), Twitter, Mailinglist, Wiki, SpaceAPI, Newsfeed and Calenderfeed. If this is the case the entry on wiki is updated with remark that this is checked. If the activity is to long ago (> 2 years) entry will be set to status 'suspected inactive' and email will be send.</li>
 		<li>Left over are the entrys that have to be checked manual.</li>
 	</ul>
-    Below you will find a list of all of the hackerspace entities that have to be manually checked.  If you want to help - pick an entry and figure out whether the hackerspace is still open or not (social media, website, etc).  If it still exists, add (hidden) text to the wiki like: '&lt!-- set to $status for $reason, Checked by person $yourname on $date --&gt' or set the status to 'closed'. To do this you'll need to create a Hackerspaces.org wiki log in and then you can edit any pages.
+    Below you will find a list of all of the hackerspace entities that have to be manually checked.  If you want to help - pick an entry and figure out whether the hackerspace is still open or not (social media, website, etc).  If it still active, add (hidden) text to the wiki like: '&lt!-- set to $status for $reason, Checked by person $yourname on $date --&gt' or set the status to 'closed' or 'suspected inactive'. To do this you'll need to create a Hackerspaces.org wiki log in and then you can edit any pages.
 <?php
 
-	$result = $database->select("wikispace", '*' ,["status" => 'manual']);
+	//$result = $database->select("wikispace", '*' ,["status" => 'manual']);
+	$result = $database->query("SELECT DISTINCT name,wikiurl FROM wikispace WHERE status = 'manual' ORDER BY wikiurl;")->fetchAll();
 
 	shuffle($result);
 

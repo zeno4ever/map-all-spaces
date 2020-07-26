@@ -1,6 +1,8 @@
 # Subliem Workspace files are user-specific
 *.sublime-workspace
 *.sublime-project
+# VS code workspace
+*.code-workspace
 
 
 # Composer components
