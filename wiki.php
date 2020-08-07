@@ -122,15 +122,24 @@ function updateOneHackerSpace($space,$action) {
 
 	$wikitext = getWikiPage($space);
 
-	if (strpos($wikitext, '|email=')>0) {
-		$email = substr($wikitext, strpos($wikitext, '|email=')+7);
-		$email = substr($email,0,strpos($email, '|')-1);
-	} elseif(strpos($wikitext,'|residencies_contact=')>0) {
-		$email = substr($wikitext, strpos($wikitext, '|residencies_contact=')+21);
-		$email = substr($email,0,strpos($email, '|')-1);
+	//find email adress
+	$regexp = '/([a-z0-9_\.\-])+\@(([a-z0-9\-])+\.)+([a-z0-9]{2,4})+/i';
+	preg_match_all($regexp, $wikitext, $mailArray);
+	if(isset($mailArray[0][0])) {
+		$email = $mailArray[0][0];
 	} else {
-		$email = '';
+		$email='';
 	}
+
+	// if (strpos($wikitext, '|email=')>0) {
+	// 	$email = substr($wikitext, strpos($wikitext, '|email=')+7);
+	// 	$email = substr($email,0,strpos($email, '|')-1);
+	// } elseif(strpos($wikitext,'|residencies_contact=')>0) {
+	// 	$email = substr($wikitext, strpos($wikitext, '|residencies_contact=')+21);
+	// 	$email = substr($email,0,strpos($email, '|')-1);
+	// } else {
+	// 	$email = '';
+	// }
 
 	switch ($action) {
 		case 'close':
@@ -378,7 +387,7 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 function updateDatabase($wikiurl,$name ='',$lastcurlerror=0,$status='') {
     global $database;
 
-    $database->insert("wikispace", [
+    $result = $database->insert("wikispace", [
     	"wikiurl" =>$wikiurl,
     	"name" =>$name,
         "lastdataupdated" => date("Y-m-d H:i:s"),
@@ -386,6 +395,9 @@ function updateDatabase($wikiurl,$name ='',$lastcurlerror=0,$status='') {
         //"curlerrorcount" => $errorcount,
         "status" => $status, 
     ]);
+
+    //echo "Database \n";
+    //print_r($result->rowCount());
 
     $errorlog = $database->error();
     if ($errorlog[1] != 0) {
@@ -494,14 +506,14 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 		message('No hs wiki action defined!!',5);
 	}
 
-	$newpage .= "\n<!--- Checked by mapp.space bot.\n".$wikiMessage."\n-->";
+	$newpage .= "\n<!--- Checked by mappall.space bot.\n".$wikiMessage."\n-->";
 
 	$params = [
 		"action" => "edit",
 		"title" => $spaceURLname,
 		"text" => $newpage,
 		"token" => $csrf_Token,
-		"summary" => "Updates by mapall.space bot",
+		"summary" => "Update to $action by wikibot",
 		"bot" => true,
 		"format" => "json"
 	];
@@ -796,6 +808,14 @@ function getDateSiteAlternativeLink($site,$url) {
 						message('No date found for '.$link);
 					}
 				}
+			} elseif (substr($generator,0,9) == 'WordPress') {
+				message('Proces Wordpress');
+				if (parse_url($link, PHP_URL_PATH) != '/comments/feed/' ) {
+					$foundDate = getDateNewsFeed($link);
+					if (!empty($foundDate)) {
+						$checkDate[$link]=date("Y-m-d H:i",strtotime($foundDate));	
+					} 
+				}
 			} else {
 				//channel lastBuildDate
 				$foundDate = getDateNewsFeed($link);
@@ -824,9 +844,10 @@ function sendEmail($email,$fullname,$url) {
 		if ($testrun) {
 			$email = 'dave@daveborghuis.nl';
 		}
-		if (empty($email)) {
+		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			message("ERROR Sendmail : Email $email not valid",5);
 			return false;
-		};
+		}
         $headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
         $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More information about this proces can be found on <a href=\"https:\\\\mapall.space\\hswikilist.php\">Mapall site</a><br>Regards,<br>Dave Borghuis\n\nLog of our checks : \n$wikiMessage";
         $mailsend = mail( 
