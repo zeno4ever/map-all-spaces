@@ -111,7 +111,7 @@ if (php_sapi_name()=='cli') {
 function updateOneHackerSpace($space,$action) {
 	global $wikiApi,$login_Token,$csrf_Token,$wikiMessage;
 
-	$wikiMessage .="\nWikiMessage\nEn\rZo.";
+	$wikiMessage .= "Updated manual via http://mapall.space/hswikilist.php\n";
 
 	if (empty($login_Token)) {
 		$login_Token = getLoginToken();
@@ -849,7 +849,7 @@ function sendEmail($email,$fullname,$url) {
 			return false;
 		}
         $headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
-        $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More information about this proces can be found on <a href=\"https:\\\\mapall.space\\hswikilist.php\">Mapall site</a><br>Regards,<br>Dave Borghuis\n\nLog of our checks : \n$wikiMessage";
+        $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More information about this proces can be found on <a href=\"https:\\\\mapall.space\\hswikilist.php\">Mapall site</a><br>Do not reply to this mail, it wil not be read.\nLog of our checks : \n$wikiMessage";
         $mailsend = mail( 
             $email,
             'Hackerspaces.org entry for '.$fullname ,
