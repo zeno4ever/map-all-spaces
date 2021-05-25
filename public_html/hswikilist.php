@@ -100,6 +100,7 @@ if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd),0,20)) {
 			if ( $validUser ) {
 				echo '<td><button type="button" onclick="wikiupdate(`'.$space['name'].'`,`close`);">Close</button></td>';
 				echo '<td><button type="button" onclick="wikiupdate(`'.$space['name'].'`,`update`);">Update</button></td>';
+				echo '<td><button type="button" onclick="wikiupdate(`' . $space['name'] . '`);">Checked</button></td>';
 				echo '</tr>';
 			} else {
 				echo '<td><button type="button" onclick="wikiupdate(`'.$space['name'].'`);">Checked</button></td>';
