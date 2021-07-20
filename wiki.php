@@ -7,6 +7,8 @@ require 'vendor/autoload.php';
 require 'settings.php'; //get secret settings
 require 'mapall_functions.php';
 
+libxml_use_internal_errors(true);
+
 //database
 use Medoo\Medoo;
 
@@ -122,28 +124,17 @@ function updateOneHackerSpace($space,$action) {
 
 	$wikitext = getWikiPage($space);
 
-	//find email adress
-	$regexp = '/([a-z0-9_\.\-])+\@(([a-z0-9\-])+\.)+([a-z0-9]{2,4})+/i';
-	preg_match_all($regexp, $wikitext, $mailArray);
-	if(isset($mailArray[0][0])) {
-		$email = $mailArray[0][0];
-	} else {
-		$email='';
+	$email = (isset($space['printouts']['Email'][0])) ?  $space['printouts']['Email'][0]  : '';
+	if (isset($space['printouts']['Residencies Contact'][0])) {
+		$email = $email . ',' . $space['printouts']['Residencies Contact'][0];
+		message( 'Found Residencies mail ' . $space['printouts']['Residencies Contact'][0],5);
 	}
-
-	// if (strpos($wikitext, '|email=')>0) {
-	// 	$email = substr($wikitext, strpos($wikitext, '|email=')+7);
-	// 	$email = substr($email,0,strpos($email, '|')-1);
-	// } elseif(strpos($wikitext,'|residencies_contact=')>0) {
-	// 	$email = substr($wikitext, strpos($wikitext, '|residencies_contact=')+21);
-	// 	$email = substr($email,0,strpos($email, '|')-1);
-	// } else {
-	// 	$email = '';
-	// }
 
 	switch ($action) {
 		case 'close':
-			sendEmail($email,$space,'https://wiki.hackerspaces.org/'.$space);
+			if(set($email)) {
+				sendEmail($email,$space,'https://wiki.hackerspaces.org/'.$space);
+			}
 			updateHackerspaceWiki($space,'inactive');
 			break;
 		case 'update':
@@ -194,8 +185,12 @@ function getHackerspacesOrgJson() {
             //only check if no modification in last year
             if ($interval > 356 ) {
             	$statistics['total']+=1;
-       		
-	            $email = (isset($space['printouts']['Email'][0])) ?  $space['printouts']['Email'][0]  : '';
+
+				$email = (isset($space['printouts']['Email'][0])) ?  $space['printouts']['Email'][0]  : '';
+				if (isset($space['printouts']['Residencies Contact'][0])) {
+					$email = $email.','. $space['printouts']['Residencies Contact'][0];
+					echo 'Found Residencies mail '. $space['printouts']['Residencies Contact'][0];
+				}
 
 				$siteUp = getCurl($url,null,60); //wait long time for responce 
 
@@ -314,23 +309,25 @@ function getHackerspacesOrgJson() {
 					}
 
 				} else {
-						$statistics['down']+=1;
+
 
 						$result = updateDatabase($source,$fullname,$siteUp['error'],'down');
 
 						if (count($result)>0) {
+							$string = '';
 							foreach ($result as $value) {
 								$string .= $value['lastdataupdated'].' ( Error '.$value['lastcurlerror'].'), ';
 							}
+							message('Site down, checked on dates : ' . $string);
 							if (count($result)>3) {
+								$statistics['down'] += 1;
+								message('Set wiki to inactive, send email to ',$email);
 								if (!$testrun) {
 									sendEmail($email,$fullname,$source);
 									updateHackerspaceWiki($fullname,'inactive');
-								};
-								message('Site down, checked on dates : '.substr($string,0,-3).' Set wiki to inactive.');
-
+								}
 							} else {
-								message('Site down, checked on dates : '.substr($string,0,-3));
+								$statistics['skipped'] += 1;
 							}						
 						};
 
@@ -405,7 +402,7 @@ function updateDatabase($wikiurl,$name ='',$lastcurlerror=0,$status='') {
         var_dump($errorlog);
     };
 
-    return $database->select("wikispace",["lastdataupdated","lastcurlerror"], ["wikiurl" =>$wikiurl]);
+    return $database->select("wikispace",["@lastdataupdated","lastcurlerror"], ["wikiurl" =>$wikiurl]);
 
 };
 
@@ -527,6 +524,8 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 
 	//solve captcha 
 	if ($result['json']['edit']['result']=='Failure' and isset($result['json']['edit']['captcha']) ) {
+
+		echo 'Solve wiki captcha';
 
 		$captchparams = [
 			"captchaid" => $result["json"]['edit']['captcha']['id'],
@@ -799,9 +798,18 @@ function getDateSiteAlternativeLink($site,$url) {
 				message('Proces DokuWiki +++');
 				$result = getCurl($link);
 				if ($result['error']==0) {
-					$xmlfeed = 	simplexml_load_string($result['result']);
-					$dc = $xmlfeed->item->children('http://purl.org/dc/elements/1.1/');
-					$foundDate = $dc->date;
+					try {
+						$xmlfeed = 	simplexml_load_string($result['result']);
+						if (!($xmlfeed === false)) {
+							$dc = $xmlfeed->item->children('http://purl.org/dc/elements/1.1/');
+							$foundDate = $dc->date;
+						} else {
+							message('Error in XML DokuWiki ' . $link);
+						}
+					} catch (exception $e) {
+						message('Error in XML DokuWiki ' . $link);
+					}
+
 					if (!empty($foundDate)) {
 						return date("Y-m-d H:i",strtotime($dc->date));				
 					} else {
@@ -848,6 +856,9 @@ function sendEmail($email,$fullname,$url) {
 			message("ERROR Sendmail : Email $email not valid",5);
 			return false;
 		}
+
+		$wikiMessage .= "Send email to : ". $email;
+
         $headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
         $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More information about this proces can be found on <a href=\"https:\\\\mapall.space\\hswikilist.php\">Mapall site</a><br>Do not reply to this mail, it wil not be read.\nLog of our checks : \n$wikiMessage";
         $mailsend = mail( 
