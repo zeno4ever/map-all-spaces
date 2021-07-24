@@ -56,14 +56,14 @@ if (isset($cliOptions['fablabq']) or isset($cliOptions['all'])) {
   getFablabQuebecJson();
 };
 
-if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
+if (isset($cliOptions['wiki'])) {
   getHackerspacesOrgJson();
 };
 
 if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
     message('Start Compare',0);
     compareDistance();
-    if (isset($cliOptions['wiki']) or isset($cliOptions['all'])) {
+    if (isset($cliOptions['all'])) {
         getHackerspacesOrgJson();
     }
 };
@@ -501,6 +501,7 @@ function compareDistance() {
             } else {
                 message('** nothing updated.');
             };
+            
         };
 
         $space_b = $space_a;
