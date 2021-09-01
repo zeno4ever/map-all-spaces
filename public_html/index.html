@@ -35,6 +35,16 @@
     <link rel="stylesheet" href="/css/leaflet-search.css" />
     <script src="/dist/leaflet-search.js"></script>
 
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2M9QVB70G3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-2M9QVB70G3');
+    </script>
+
 </head>
 <body>
     <div id="header">
@@ -43,6 +53,7 @@
                 <li><a href="/" class="active">Home</a></li>
                 <li><a href="faq.php">FAQ</a></li>
                 <li><a href="hswikilist.php">Hackerspace Census</a></li>
+                <li><a href="onespace.html">Status your space</a></li>
                 <li><a href="about.html">About</a></li>
                 <li style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" target=_blank><img src="/image/github-white.png" alt="Join us on Github"></a></li>
             </ul>
@@ -54,9 +65,26 @@
         <div id="map"></div>
     </div>
     <script>
-        var map = L.map('map').locate({setView: true, maxZoom: 8});
+    var pos = [51, 12];
 
-        map.spin(true);
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(getPos);
+    };
+   
+    //Callback geolocation
+    function getPos(geoPos) {
+        pos = [geoPos.coords.latitude, geoPos.coords.longitude];
+    };
+
+        console.log(pos);
+
+
+        var map = L.map('map').setView(pos,4); 
+        
+        // var map = L.map('map').locate({ setView: true, maxZoom: 8 });
+        //var pos = L.GeoIP.getPosition();
+        //51.7491824,12.3034407,4.3z
+        //L.GeoIP.centerMapOnPosition(map);
 
         //attributes for basemap credit (lower right hand corner annotation)
         var streetsAttr = 'Map tiles by Carto, under CC BY 3.0. Data by <a href="https://openstreetmap.org">OpenStreetMap</a>, under ODbL.';
@@ -78,11 +106,13 @@
           "OpenStreetMap": OpenStreetMap_Mapnik,
         };
 
-        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 8, chunkedLoading: true}).addTo(map);
+        var masClusGroup = new L.markerClusterGroup({disableClusteringAtZoom: 7, chunkedLoading: true}).addTo(map);
 
         var layerSpaceApi = L.featureGroup.subGroup(masClusGroup).addTo(map);
         var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
         var layerSpaceWiki = L.featureGroup.subGroup(masClusGroup).addTo(map);       
+
+        map.spin(true);
 
         //spaceapi
         $.getJSON('/api.geojson', function(cartodbdata) {

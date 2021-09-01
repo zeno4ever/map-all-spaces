@@ -16,3 +16,5 @@ test.php
 errorlog.txt
 wikilog.txt
 cookie.txt
+private/init.php
+privatecookie.txt

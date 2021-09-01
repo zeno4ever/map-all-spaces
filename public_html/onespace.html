@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>One Space Status</title>
+
+    <meta charset="UTF-8">
+    <meta name="Map hackerspaces/fablabs/makerspaces "
+        content="Dynamic map with all hackerspace, fablabs and makerspaces">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+    <meta http-equiv="refresh" content="300; URL=/onespace.html">
+    <!-- If IE use the latest rendering engine -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Set the page to the width of the device and set the zoon level -->
+    <meta name="viewport" content="width = device-width, initial-scale = 1">
+
+    <!-- jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2M9QVB70G3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-2M9QVB70G3');
+    </script>
+        <style>
+            .status {
+                margin: 10px;
+                padding: 8px;
+                text-align: center;
+                border-radius: 15px;
+            }        
+            .open {
+                background-color: green;
+                color: white;   
+            }
+        
+            .closed {
+                background-color: red;
+                color: white;   
+            }
+        </style>
+</head>
+<body>
+    <div id="header">
+        <nav class="menu">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="faq.php">FAQ</a></li>
+                <li><a href="hswikilist.php">Hackerspace Census</a></li>
+                <li><a class="active" href="onespace.html">Status your space</a></li>
+                <li><a href="about.html">About</a></li>
+                <li style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" target=_blank><img
+                            src="/image/github-white.png" alt="Join us on Github"></a></li>
+            </ul>
+        </nav>
+        <div style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" style=""><img
+                    src="/image/github-white.png" alt="Join us on Github"></a></div>
+    </div>
+    <div>
+        <img id="spaceimage" src="/image/hslogo.png" width="100%">
+        <p id="textstatus" class="status">Select a space!</p>
+    </div>
+    <form >
+        <label>Choose a space:</label>
+        <select id="spaces" onchange="setCookie()"></select>
+    </form>
+    <div id="help">
+        This page is meant to be used as static page to view current the open/closed status of your selected page. It will be
+        refreshed every 5 minutes. Once a space is selected the header and this text wil be disappear. To reset to start remove cookies.
+    </div>
+    <script>
+        const getCookie = (name) => {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    let c = cookies[i].trim().split('=');
+                    if (c[0] === name) {
+                        return c[1];
+                    }
+                }
+                return "";
+        };
+
+        function forceUrlProtocol(url) {
+            const urlObj = new URL(url);
+            urlObj.protocol = location.protocol;            
+            return urlObj.toString();
+        }
+
+        var spaceurl = '';
+        var allspaces = {};
+        var spacename = '';
+
+        if(getCookie('spacename')){
+            spacename = getCookie('spacename');
+        };
+
+        $.getJSON("https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json", function (data) {
+            $.each(data, function (key, val) {
+
+                allspaces[key]=val;
+
+                if(key == spacename) {
+                    $('#spaces').append("<option selected='selected' value='" + key + "'>" + key + "</option>");
+                    getSpaceAPIStatus(val);
+                } else {
+                    $('#spaces').append("<option value='" + key + "'>" + key + "</option>");                    
+                };
+
+            });
+        });
+
+        function setCookie(params) {
+            spacename = document.getElementById('spaces').value;
+
+            document.cookie = "spacename=" + spacename + "; expires=Thu, 18 Dec 2099 12:00:00 UTC";
+            document.cookie = "spaceurl="+ allspaces[spacename] +"; expires=Thu, 18 Dec 2099 12:00:00 UTC";
+
+            getSpaceAPIStatus(allspaces[spacename]);
+
+            $("#header").hide();
+            $("#help").hide();
+
+        };
+
+        function getSpaceAPIStatus(url) {
+            $("#header").hide();
+            $("#help").hide();
+
+            $('#spaceimage').attr('src', '/image/hslogo.png');
+            $('#textstatus').text('Unknown');
+
+            $.getJSON(url, function(data)  {
+                let datestring = '';
+                let iconopen = '';
+                let iconclosed = '';
+
+                console.log('spaceapi data:');
+                console.log(data);
+
+                if (data['state']['icon'] != null) {
+                    iconopen = String(data['state']['icon']['open']);
+                    iconclosed = String(data['state']['icon']['open']);
+                };
+
+                if ( data['logo'] != null) {
+                    $('#spaceimage').attr('src', forceUrlProtocol(data['logo']));
+                };
+
+                if (data['state']['open'] == true) {
+                    if (iconopen != "") {
+                             $('#spaceimage').attr('src', forceUrlProtocol(iconopen));
+                    };
+                    datestring = 'Open';
+                    $('#textstatus').removeClass("open closed").addClass("open");
+                } else {
+                    if (iconclosed != "") {
+                        $('#spaceimage').attr('src', forceUrlProtocol(iconclosed));
+                    };
+                    datestring = 'Closed';
+                    $('#textstatus').removeClass("open closed").addClass("closed");
+
+                };
+
+                if (data.state.lastchange) {
+                    datestring += ' since ' + new Date(data.state.lastchange * 1000).toLocaleString();
+                };
+
+                $('#textstatus').text(datestring);
+                $(document).attr('title', 'Status '+ spacename);
+
+            })
+            .fail(function (jqxhr, textStatus, error) {
+                $('#textstatus').removeClass("open closed").addClass("closed");
+                $('#textstatus').text('Get SpaceAPI failed, check if CORS on server is enabled.');
+            });
+        };
+
+    </script>
+</body>
+</html>

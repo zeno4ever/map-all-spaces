@@ -1,5 +1,6 @@
 <?php
 
+//require_once('../init.php');
 
 function getJSON($url,$fields=null,$timeout=240) {
 	$result = getCurl($url,$fields,$timeout);
@@ -18,14 +19,14 @@ function getJSON($url,$fields=null,$timeout=240) {
 }
 
 function getCurl($url,$postFields=null,$timeout=240) {
-    //global $messages;
-	//global $httpHeaders;
+    global $PRIVATE;
 
 	$httpHeaderLastModified=null;
 	$httpHeaders =[];
 
     $curlSession = curl_init();
-    curl_setopt($curlSession, CURLOPT_BINARYTRANSFER, true);
+    //curl_setopt($curlSession, CURLOPT_BINARYTRANSFER, true);
+
     curl_setopt($curlSession, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curlSession, CURLOPT_USERAGENT, "http://mapall.space");
 
@@ -44,10 +45,8 @@ function getCurl($url,$postFields=null,$timeout=240) {
     	curl_setopt( $curlSession, CURLOPT_POSTFIELDS, http_build_query( $postFields ) );
     };
 
-	curl_setopt($curlSession, CURLOPT_COOKIEJAR, "cookie.txt");
-	curl_setopt($curlSession, CURLOPT_COOKIEFILE, "cookie.txt");
-
-    //curl_setopt( $curlSession, CURLOPT_HEADERFUNCTION, "CurlHeader");
+    curl_setopt($curlSession, CURLOPT_COOKIEJAR, $PRIVATE."cookie.txt");
+	curl_setopt($curlSession, CURLOPT_COOKIEFILE, $PRIVATE."cookie.txt");
 
     $result = curl_exec($curlSession);
     $curl_error = curl_errno($curlSession);

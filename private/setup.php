@@ -1,9 +1,6 @@
 <?php
 
-include 'settings.php';
-
-//composer components
-require 'vendor/autoload.php';
+require 'init.php';
 
 use Medoo\Medoo;
 

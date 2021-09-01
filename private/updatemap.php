@@ -1,9 +1,6 @@
 <?php
-include './settings.php';
 
-require 'vendor/autoload.php';
-
-require 'mapall_functions.php';
+require 'init.php';
 
 use Medoo\Medoo;
 

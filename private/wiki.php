@@ -3,11 +3,8 @@
 Author : Dave Borghuis
 See also : 	https://wiki.hackerspaces.org/Hackerspace_Census_2019
 */
-require 'vendor/autoload.php';
-require 'settings.php'; //get secret settings
-require 'mapall_functions.php';
 
-libxml_use_internal_errors(true);
+require 'init.php';
 
 //database
 use Medoo\Medoo;
@@ -28,8 +25,6 @@ $loglevel=0;
 $loglevelfile=0;
 $removeOlderThen = date("Y-m-d H:i",strtotime('-2 years'));
 $wikiMessage ='';
-//$httpHeaders = []; 
-
 
 if (php_sapi_name()=='cli') {
 
@@ -124,11 +119,11 @@ function updateOneHackerSpace($space,$action) {
 
 	$wikitext = getWikiPage($space);
 
-	$email = (isset($space['printouts']['Email'][0])) ?  $space['printouts']['Email'][0]  : '';
-	if (isset($space['printouts']['Residencies Contact'][0])) {
-		$email = $email . ',' . $space['printouts']['Residencies Contact'][0];
-		message( 'Found Residencies mail ' . $space['printouts']['Residencies Contact'][0],5);
-	}
+	$email =  $space['printouts']['Email'][0]  ?? '';
+	$email .= (' , ' . $space['printouts']['Residencies Contact'][0] )?? '';
+	$email = str_replace('mailto:', '', $email);
+
+
 
 	switch ($action) {
 		case 'close':
@@ -186,11 +181,16 @@ function getHackerspacesOrgJson() {
             if ($interval > 356 ) {
             	$statistics['total']+=1;
 
-				$email = (isset($space['printouts']['Email'][0])) ?  $space['printouts']['Email'][0]  : '';
+				$email =  $space['printouts']['Email'][0]  ?? '';
+				$email .= (' , ' . $space['printouts']['Residencies Contact'][0]) ?? '';
+				$email = str_replace('mailto:', '' ,$email);
+
 				if (isset($space['printouts']['Residencies Contact'][0])) {
+					$email .= $space['printouts']['Residencies Contact'][0] ??'';
 					$email = $email.','. $space['printouts']['Residencies Contact'][0];
+
 					echo 'Found Residencies mail '. $space['printouts']['Residencies Contact'][0];
-				}
+				};
 
 				$siteUp = getCurl($url,null,60); //wait long time for responce 
 
@@ -201,6 +201,7 @@ function getHackerspacesOrgJson() {
 					if (empty($url)) {
 						message('No site, check on dates.');
 					} else {
+
 						message('Site up check on RSS dates.');
 
 						$namefound = substr_count(strtoupper($siteUp['result']),str_replace('_',' ',strtoupper($fullname)));
@@ -269,6 +270,18 @@ function getHackerspacesOrgJson() {
 					}
 
 					//TODO facebook
+
+					//check if lon/lat is within normal range
+					if (isset($space['printouts']['Location'][0])) {
+						$location = $space['printouts']['Location'][0];
+						//message('lat' . $location['lat '] . '/ lon ' . $location['lon']);
+						if ($location['lon'] < -180 or $location['lon'] > 180 or $location['lat'] < -90 or $location['lat'] > 90
+						) {
+							message('Wrong lat\lon is : [ lat ' . $location['lat'] . '/ lon ' . $location['lon']);
+							//sendErrorLonLatEmail($email, $fullname, $url, $location);
+						}
+					};
+
 
 					//do all the check
 					$lastUpdateDate = 0;
@@ -579,8 +592,8 @@ function getCaptchaAnswer($question) {
         case "Where is hackerspaces.org currently hosted at? Hint: Read the Disclaimers (bottom of page)":
             return "Nessus";
 			break;
-        case "What is the name of our IRC channel on freenode? Hint: Read the Communication page":
-            return "#hackerspaces";
+		case "What is the name of our IRC channel on libera? Hint: Read the Communication page":
+			return "#hackerspaces";
 			break;
 		case "This website is for whom? Hint: Read the frontpage":
 			return "Anyone and Everyone";
@@ -872,6 +885,33 @@ function sendEmail($email,$fullname,$url) {
             message('Error : Email not send!! '.$email,5);
             return false;
         }
+};
+
+function sendErrorLonLatEmail($email, $fullname, $url, $location)
+{
+	if ($testrun) {
+		$email = 'dave@daveborghuis.nl';
+	}
+	if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+		message("ERROR Sendmail : Email $email not valid", 5);
+		return false;
+	}
+
+	$wikiMessage .= "Send email to : " . $email;
+
+	$headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
+	$mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has incorrect location data. Probaly the longatude and latatude may be swaped. Please check this data and change it on your wiki page accordingly.";
+	$mailsend = mail(
+		$email,
+		'Location data on Hackerspaces.org entry for ' . $fullname,
+		$mailmessage,
+		$headers
+	);
+
+	if (!$mailsend) {
+		message('Error : Email not send!! ' . $email, 5);
+		return false;
+	}
 };
 
 
