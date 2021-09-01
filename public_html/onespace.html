@@ -69,7 +69,7 @@
     </form>
     <div id="help">
         This page is meant to be used as static page to view current the open/closed status of your selected page. It will be
-        refreshed every 5 minutes. Once a space is selected the header and this text wil be disappear. To reset to start remove cookies.
+        refreshed every 5 minutes. Once a space is selected the header and this text wil be disappear.
     </div>
     <script>
         const getCookie = (name) => {
@@ -93,8 +93,12 @@
         var allspaces = {};
         var spacename = '';
 
-        if(getCookie('spacename')){
-            spacename = getCookie('spacename');
+        //read url
+        var queryString = location.search;
+        let params = new URLSearchParams(queryString);
+        let urlspacename = params.get("space");
+        if (urlspacename != null) {
+            spacename = urlspacename;
         };
 
         $.getJSON("https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json", function (data) {
@@ -115,14 +119,12 @@
         function setCookie(params) {
             spacename = document.getElementById('spaces').value;
 
-            document.cookie = "spacename=" + spacename + "; expires=Thu, 18 Dec 2099 12:00:00 UTC";
-            document.cookie = "spaceurl="+ allspaces[spacename] +"; expires=Thu, 18 Dec 2099 12:00:00 UTC";
-
             getSpaceAPIStatus(allspaces[spacename]);
 
             $("#header").hide();
             $("#help").hide();
 
+            location.href = '/onespace.html?space='+ encodeURIComponent(spacename);
         };
 
         function getSpaceAPIStatus(url) {
