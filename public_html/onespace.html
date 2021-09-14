@@ -70,7 +70,7 @@
     <div>
         <img id="spaceimage" class="spaceimage" src="/image/hslogo.png">
         <p id="textstatus" class="status">Select a space!</p>
-        <div id="textohter" class="other"></div>
+        <div id="textohter" class="other">ff</div>
     </div>
     <form >
         <label>Choose a space:</label>
@@ -148,7 +148,8 @@
             $('#textstatus').text('Please wait....');
             $('#textohter').text('');
 
-            $.getJSON(forceUrlProtocol(url), function(data)  {
+            //$.getJSON(forceUrlProtocol(url), function (data) {
+            $.getJSON(url, function(data)  {
                 let datestring = '';
                 let iconopen = '';
                 let iconclosed = '';
@@ -157,8 +158,6 @@
 
                 console.log('spaceapi data:');
                 console.log(data);
-
-                //var apiversion = parseFloat(data.api);
 
                 //open/closed 
                 if (parseFloat(data.api) < 0.13) {
@@ -197,6 +196,17 @@
                     datestring += " since " + new Date(lastchange * 1000).toLocaleString();
                 };
 
+                if (data.sensors.people_now_present != null) {
+                    ohterstring += "Present : ";
+                    let connections = 0;
+                    data.sensors.people_now_present.forEach(element => {
+                        connections += element.value;
+                        ohterstring += element.names;
+                    });
+                    if (connections !=0) {
+                        ohterstring += " Connections : " + connections;
+                    };
+                }
 
                 $('#textstatus').text(datestring);
                 $('#textohter').text(ohterstring);
