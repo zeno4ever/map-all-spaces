@@ -1,7 +1,5 @@
 <?php
 
-//require_once('../init.php');
-
 function getJSON($url,$fields=null,$timeout=240) {
 	$result = getCurl($url,$fields,$timeout);
 
@@ -33,12 +31,6 @@ function getCurl($url,$postFields=null,$timeout=240) {
     curl_setopt($curlSession, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curlSession, CURLOPT_USERAGENT, "http://mapall.space");
 
-    //curl_setopt($curlSession, CURLOPT_HTTPHEADER, true);
-    //curl_setopt($curlSession, CURLOPT_, false);
-
-
-    //curl_setopt($curlSession, CURLOPT_NOBODY,false);
-    
     //for redirect
     curl_setopt($curlSession, CURLOPT_FOLLOWLOCATION, true);
     
@@ -59,17 +51,16 @@ function getCurl($url,$postFields=null,$timeout=240) {
 
     curl_setopt($curlSession, CURLOPT_HEADERFUNCTION, "CurlHeader");
 
-
     $result = curl_exec($curlSession);
     $curl_error = curl_errno($curlSession);
     $curl_info = curl_getinfo($curlSession,CURLINFO_HTTP_CODE);
     $curl_ssl  = curl_getinfo($curlSession, CURLINFO_SSL_VERIFYRESULT);
 
-    if ($curl_ssl!=0) {
-		message('SSL verify error '.$curl_ssl,5);
-    }
-
     curl_close($curlSession);
+
+    if ($curl_ssl != 0) {
+		echo 'SSL verify error '.$curl_ssl.PHP_EOL;
+    };
 
     foreach ($httpHeaders as $line) {
     	if (substr($line,0,13)=='Last-Modified') {
@@ -91,12 +82,11 @@ function getCurl($url,$postFields=null,$timeout=240) {
         } else {
             $error = $curl_ssl+2000;
         }
-        // echo '** SSL Error :' . $curl_ssl . PHP_EOL;
+
         // echo '** CURL  Error :' . $curl_error . PHP_EOL;
         // echo '** HTTP Error :' . $curl_info . PHP_EOL;
+        // echo '** SSL Error :' . $curl_ssl . PHP_EOL;
         
-
-        //$error = ($curl_error!=0) ? $curl_error : $curl_info;  
         return array('result'=>null,'error'=>$error,'lastmodified'=>null, 'cors' => $httpHeaderCORSEnabled);
     };
 };

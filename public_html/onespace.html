@@ -7,7 +7,6 @@
     <meta name="Map hackerspaces/fablabs/makerspaces "
         content="Dynamic map with all hackerspace, fablabs and makerspaces">
     <link rel="stylesheet" type="text/css" href="/css/style.css">
-    <meta http-equiv="refresh" content="300; URL=/onespace.html">
     <!-- If IE use the latest rendering engine -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- Set the page to the width of the device and set the zoon level -->
@@ -24,32 +23,6 @@
         gtag('js', new Date());
         gtag('config', 'G-2M9QVB70G3');
     </script>
-        <style>
-            .status {
-                margin: 10px;
-                padding: 8px;
-                text-align: center;
-                border-radius: 15px;
-            }
-            .other {
-                text-align: center;
-                font-size: small;
-                font-weight: lighter;
-                display: block; 
-            }
-            .open {
-                background-color: green;
-                color: white;   
-            }
-            .closed {
-                background-color: red;
-                color: white;   
-            }
-            .spaceimage {
-                 max-width: 100%;
-                 align-content: center;
-            }
-        </style>
 </head>
 <body>
     <div id="header">
@@ -78,7 +51,7 @@
     </form>
     <div id="help">
         This page is meant to be used as static page to view current the open/closed status of your selected page. It will be
-        refreshed every 5 minutes. Once a space is selected the header and this text wil be disappear.
+        refreshed every 10 minutes. Once a space is selected the header and this text wil be disappear.
     </div>
     <script>
         const getCookie = (name) => {
@@ -106,10 +79,13 @@
         var queryString = location.search;
         let params = new URLSearchParams(queryString);
 
-        let urlspacename = params.get("space");
-        if (urlspacename != null) {
-            spacename = urlspacename;
-        };
+        // let urlspacename = params.get("space");
+        // if (urlspacename != null) {
+        //     spacename = urlspacename;
+        // };
+        spacename = params.get("space");
+        console.log('spacename : '+spacename);
+
 
         $.getJSON("https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json", function (data) {
             $.each(data, function (key, val) {
@@ -135,6 +111,17 @@
             $("#help").hide();
 
             location.href = '/onespace.html?space='+ encodeURIComponent(spacename);
+        };
+
+        //setInterval(timerSpaceAPI, 10 * 60 * 1000); //every 5 minutes
+        setInterval(timerSpaceAPI, 10*1000); //every 5 minutes
+       
+        function timerSpaceAPI() {
+            console.log('timer all ' + allspaces[spacename]);
+            console.log('timer name '+ spacename);
+            if (spacename != '') {
+                getSpaceAPIStatus(allspaces[spacename]);
+            };
         };
 
         function getSpaceAPIStatus(url) {
@@ -196,17 +183,19 @@
                     datestring += " since " + new Date(lastchange * 1000).toLocaleString();
                 };
 
-                if (data.sensors.people_now_present != null) {
-                    ohterstring += "Present : ";
-                    let connections = 0;
-                    data.sensors.people_now_present.forEach(element => {
-                        connections += element.value;
-                        ohterstring += element.names;
-                    });
-                    if (connections !=0) {
-                        ohterstring += " Connections : " + connections;
+                if (data.sensors != null) {
+                    if (data.sensors.people_now_present != null) {
+                        ohterstring += "Present : ";
+                        let connections = 0;
+                        data.sensors.people_now_present.forEach(element => {
+                            connections += element.value;
+                            ohterstring += element.names;
+                        });
+                        if (connections !=0) {
+                            ohterstring += " Connections : " + connections;
+                        };
                     };
-                }
+                };
 
                 $('#textstatus').text(datestring);
                 $('#textohter').text(ohterstring);

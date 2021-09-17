@@ -20,4 +20,11 @@ $twitterSettings = array(
     'consumer_secret' => ""
 );
 
+
+//init database 
+use Medoo\Medoo;
+$database = new Medoo([
+    'database_type' => 'sqlite',
+    'database_file' => $databasefile
+]);
 ?>
