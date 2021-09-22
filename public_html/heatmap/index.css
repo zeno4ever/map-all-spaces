@@ -1,0 +1,35 @@
+/* The overlay effect (full height and width) - lays on top of the container and over the image */
+.overlay {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background-color: #008CBA;
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+	transform: scale(0);
+	transition: .3s ease;
+}
+
+/* When you mouse over the container, the overlay text will "zoom" in display */
+.container:hover .overlay {
+	transform: scale(1);
+}
+
+body { font-family: sans-serif;
+line-height: 2em;
+}
+
+.letters { text-align: justify; }
+
+a { color: black; font-style: bold; padding: .4rem .7rem }
+
+.letter {
+	margin-top: 8em;
+/*float: left;
+clear: left;
+width: 2rem;
+margin: 3rem; */
+font-size: 300%;
+}

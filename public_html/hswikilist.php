@@ -1,9 +1,6 @@
 <?php
-
-
 require '../private/init.php'; //get secret settings
 require $PRIVATE . '/wiki.php';
-//require $PUBLIC . '../vendor/autoload.php';
 
 if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd), 0, 20)) {
 	$validUser = true;
@@ -59,17 +56,7 @@ if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd), 0, 20)) {
 <body>
 	<main id="content">
 		<div id="header">
-			<nav class="menu">
-				<ul>
-					<li><a href="/">Home</a></li>
-					<li><a href="faq.php">FAQ</a></li>
-					<li><a href="hswikilist.php" class="active">Hackerspace Census</a></li>
-					<li><a href="onespace.html">Status your space</a></li>
-					<li><a href="about.html">About</a></li>
-					<li style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" target=_blank><img src="/image/github-white.png" alt="Join us on Github"></a></li>
-				</ul>
-			</nav>
-			<div style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" style=""><img src="/image/github-white.png" alt="Join us on Github"></a></div>
+			<? include $PRIVATE . '/layout/navigate.php' ?>
 		</div>
 		<div class="pwform">
 			<?php

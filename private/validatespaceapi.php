@@ -54,11 +54,11 @@ function validateSpaceApi() {
                 } else {
                     $emailMessage .= "- Spaceapi via https failed, consider enable https." . PHP_EOL;
                     //fallback to normal json
-                    $getApiResult = getJSON($url, 20);
+                    $getApiResult = getJSON($url, null, 20);
                 };
 
             } else {
-                $getApiResult = getJSON($url, 20);
+                $getApiResult = getJSON($url, null, 20);
             };
             // Error 0-99 Curl
             // Error 100-999 http

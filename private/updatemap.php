@@ -87,12 +87,15 @@ function getSpaceApi() {
 
             message('Space '.$space);
 
+            //check if exist heatmap, if not create
+
             $foundError = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($url),"lastcurlerror[>]" =>0, "curlerrorcount[>]"=>3]);
-            
+            $state = null;
+
             if ($foundError) {
                 message('SKIP (in database with error) for '.$space,4);
             } else {
-                $getApiResult = getJSON($url,20);
+                $getApiResult = getJSON($url,null,20);
 
                 if ( isset($getApiResult['json']) && $getApiResult['error']==0) {
                     $apiJson = $getApiResult['json'];            
@@ -107,9 +110,21 @@ function getSpaceApi() {
                     };
 
                     if (isset($apiJson['state']['open'])) {
+                        //api v13=>
                         if ($apiJson['state']['open']) {
+                            $state = true;
                             $icon = '/image/hs_open.png';
                         } else {
+                            $state = false;
+                            $icon = '/image/hs_closed.png';
+                        };
+                    } elseif(isset($apiJson['open'])){
+                        //api v<13
+                        if ($apiJson['open']) {
+                            $state = true;
+                            $icon = '/image/hs_open.png';
+                        } else {
+                            $state = false;
                             $icon = '/image/hs_closed.png';
                         };
                     } else {
@@ -130,16 +145,87 @@ function getSpaceApi() {
 
                     updateSpaceDatabase('A',cleanUrl($url),$space,0,$lon,$lat);
 
+                    updateSpaceHeatmap($space, $state, 1, $getApiResult['json']);
+
+                    //updateSpaceHeatmapSpace($space,1, $getApiResult['json']);
+
                 } else {
                     message("Skip $space - error ".$getApiResult['error'],5);
                     updateSpaceDatabase('A',cleanurl($url),$space,$getApiResult['error'],$lon,$lat);
+
+                    updateSpaceHeatmap($space, $state, 0, $getApiResult['json']);
+                    
+                    //updateSpaceHeatmapSpace($space, 0, $getApiResult['json']);
+
                 };
             };
 
         };
         saveGeoJSON('api.geojson',$array_geo);
     };
+    
+    // if ($mysqli) {
+    //     $mysqli->close();
+    // }
 };
+
+function updateSpaceHeatmap($space,$state,$status,$json) {
+    global $mysqli;
+    $hashname = md5($space);
+    $open = (int) $state;
+
+    if ($status==1) {
+        $sql = "INSERT INTO data_$hashname(ts, open) VALUES('" . date('Y-m-d H:m:s') . "', $open)";
+        if (!$result = $mysqli->query($sql)) {
+            echo "SQL = " . $sql . PHP_EOL;
+            echo "SQL conn Error :".$mysqli->connect_error;
+            echo "SQL Error :" . $mysqli->error;
+        };
+    };
+
+    if ($status==1) {
+        $ok=1;
+        $error=0;
+    } else {
+        $ok=0;
+        $error=1;
+    }
+    //do via bind statement.
+    $sql = "UPDATE spaces SET get_err=get_err+$error,get_ok=get_ok + $ok, get_total=get_total + 1, lns=$open WHERE spaces.key='$hashname'";
+    if (!$result = $mysqli->query($sql)) {
+        echo "SQL2 = " . $sql . PHP_EOL;
+        echo "SQL conn Error :" . $mysqli->connect_error;
+        echo "SQL Error :" . $mysqli->error;
+    };
+};
+
+// function updateSpaceHeatmapSpace($space,$status,$json) {
+//     global $mysqli;
+//     $hashname = md5($space);
+//     //ok,error
+//     //sa=json
+//     //lns= 1 ok - 0 error
+//     //get_ok,get_err,get_total
+//     // cur.execute("UPDATE spaces SET logo=%s, get_ok=get_ok + 1, get_total=get_total + 1, sa=%s, lns=%s WHERE `key`=%s", (logo, data_in, add, row[0]))
+//     if ($status) {
+//         $ok=1
+//         $error=0
+//     } else {
+//         $ok=0
+//         $error=1
+//     }
+
+
+//     $sql = "UPDATE spaces SET get_error=get_error+$error,get_ok=get_ok + $ok, get_total=get_total + 1, sa='$json', lns=1 WHERE key=$hashname";
+
+//     // if (!$result = $mysqli->query($sql)) {
+//     //     //error?
+//     // };
+
+// };
+
+
+
 
 function validateSpaceApi()
 {
@@ -166,19 +252,19 @@ function validateSpaceApi()
             if (parse_url($url, PHP_URL_SCHEME) == 'http') {
                 $httpsurl = preg_replace("/^http:/i", "https:", $url);
                 echo "Checking https " . $httpsurl . PHP_EOL;
-                $getApiResult = getJSON($httpsurl, 20);
+                $getApiResult = getJSON($httpsurl,null, 20);
                 if (isset($getApiHTTPResult['json']) and $getApiResult['error'] === 0) {
                     $emailMessage .= "- Spaceapi via https works, update this in spaceapi directory." . PHP_EOL;
                     $getApiResult = $getApiResult;
                 } else {
                     $emailMessage .= "- Spaceapi via https failed, consider enable https." . PHP_EOL;
                     //fallback to normal json
-                    $getApiResult = getJSON($url, 20);
+                    $getApiResult = getJSON($url, null, 20);
                 };
                 echo "End checking https " . PHP_EOL;
 
             } else {
-                $getApiResult = getJSON($url, 20);
+                $getApiResult = getJSON($url, null, 20);
             };
 
             if($getApiResult['cors'] == false) {

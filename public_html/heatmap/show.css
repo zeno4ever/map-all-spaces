@@ -1,0 +1,31 @@
+table {
+        border-collapse: separate;
+        background: #ddd;
+        border-spacing: 2px;
+}
+th, td {
+        padding: 0.5ex;
+}
+td {
+        font-family: monospace;
+        text-align:  center;
+}
+tr:first-child th {
+        position: relative;
+        left: -19px;
+}
+
+tr:first-child th:last-child {
+        position: static;
+
+}
+th:first-child {
+        text-align: left;
+
+}
+tr:last-child td {
+        border-top: 2ex solid #ddd
+}
+td:last-child, th:last-child {
+        border-left: 2ex solid #ddd;
+}

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
+<? require '../private/init.php';?>
 <html lang="en-US">
-
 <head>
 	<link rel="stylesheet" href="/css/style.css" />
 	<meta name="Map hackerspaces/fablabs/makerspaces " content="Dynamic map with all hackerspace, fablabs and makerspaces">
@@ -22,16 +22,7 @@
 
 <body>
 	<div id="header">
-		<nav class="menu">
-			<ul>
-				<li><a href="/">Home</a></li>
-				<li><a href="faq.html" class="active">FAQ</a></li>
-				<li><a href="hswikilist.php">Hackerspace Census</a></li>
-				<li><a href="onespace.html">Status your space</a></li>
-				<li><a href="about.html">About</a></li>
-				<li style="float:right"><a href="https://github.com/zeno4ever/map-all-spaces" target=_blank><img src="/image/github-white.png" alt="Join us on Github"></a></li>
-			</ul>
-		</nav>
+		<? include $PRIVATE.'/layout/navigate.php' ?>
 	</div>
 	<main id="content">
 		<div class="content">
