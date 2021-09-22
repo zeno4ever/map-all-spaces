@@ -1,11 +1,11 @@
 <?php
 
-$menu = $_GET['menu'];
+$menu = $_GET['menu'] ?? '';
 
 ?>
 <nav class="menu">
 	<ul>
-		<li><a href="/?menu=home" class="<? if (strcmp($menu, 'home') == 0) {
+		<li><a href="/index.php?menu=home" class="<? if (strcmp($menu, 'home') == 0) {
 												echo 'active';
 											}; ?>">Home</a></li>
 		<li><a href="/heatmap/?menu=heatmap" class="<? if (strcmp($menu, 'heatmap') == 0) {
