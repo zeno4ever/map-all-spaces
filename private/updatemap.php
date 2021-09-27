@@ -138,11 +138,11 @@ function getSpaceApi() {
                     };
 
                     //translate spaceapi array to geojson array
-                    $full_address = explode(',',(isset($apiJson['location']['address'] )) ?? '' );
+                    $full_address = array_map('trim', explode(',', ($apiJson['location']['address'] ?? '')));
 
-                    $address = (isset($full_address[0])) ? trim($full_address[0]) : '';
-                    $zip = (isset($full_address[1])) ? trim($full_address[1]) : '';
-                    $city = (isset($full_address[2])) ? trim($full_address[2]) : '';
+                    $address = $full_address[0] ?? '';
+                    $zip = $full_address[1] ?? '';
+                    $city = $full_address[2] ?? '';
 
                     $email = $apiJson['contact']['email'] ?? '' ;
                     $phone = $apiJson['contact']['phone'] ?? '';
@@ -228,15 +228,6 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
         };
     };
 
-    // if ($status==1) {
-    //     $ok=1;
-    //     $error=0;
-    // } else {
-    //     $ok=0;
-    //     $error=1;
-    // }
-
-
     $stmt = $mysqli->prepare("UPDATE spaces SET get_err=get_err+?,get_ok=get_ok + ? , get_total=get_total + 1, lns=?, sa=?,url =?  WHERE spaces.key=?");
     if ($stmt) {
         $ok = ($status == 1);
@@ -244,15 +235,8 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
         $jsonString = json_encode($json);
         $stmt->bind_param('iiisss', $error, $ok, $status, $jsonString, $jsonUrl, $hashname);
         $stmt->execute();
-        //$stmt->close();
     };
 
-    // $sql = "UPDATE spaces SET get_err=get_err+$error,get_ok=get_ok + $ok, get_total=get_total + 1, lns=$open WHERE spaces.key='$hashname'";
-    // if (!$result = $mysqli->query($sql)) {
-    //     echo "SQL3 = " . $sql . PHP_EOL;
-    //     echo "SQL conn Error :" . $mysqli->connect_error;
-    //     echo "SQL Error :" . $mysqli->error;
-    // };
 };
 
 function getTimeZone($lon,$lat) {
