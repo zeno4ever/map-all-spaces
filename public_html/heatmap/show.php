@@ -5,11 +5,11 @@
 <HEAD>
 	<link rel="stylesheet" type="text/css" href="/css/style.css">
 </HEAD>
-
 <BODY>
 	<div id="header">
 		<? include $PRIVATE . '/layout/navigate.php' ?>
 	</div>
+
 	<?php
 	//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
 
@@ -20,7 +20,6 @@
 	$result = $mysqli->query($sql);
 	$row = $result->fetch_assoc();
 	$j = json_decode($row['sa'], TRUE);
-
 
 	//Timezone calculations
 	$their_tz = $row['timezone'];
@@ -141,7 +140,7 @@
 								$counts[$d][24] = $t / 24;
 							}
 
-						?><TABLE><?
+						?><TABLE class="heatmap"><?
 									print "\n";
 									?><TR>
 				<TH></TH><?

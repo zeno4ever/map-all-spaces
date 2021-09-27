@@ -20,6 +20,13 @@ date_default_timezone_set('Europe/Amsterdam');
 $loglevel = 0; //all
 $loglevelfile = 2; //log to logfile
 
+//testing space heatmap
+//$json = json_decode(file_get_contents('https://spaceapi.tkkrlab.nl'),true);
+// $json = json_decode(file_get_contents('tkkrlab_spaceapi.json'),true);
+// updateSpaceHeatmap('TkkrLab555', false, 0, 'https://spaceapi.tkkrlab.nl' ,$json);
+//$result = getTimeZone(6.82053, 52.21633);
+//exit;
+
 $cliOptions = getopt('',['all','wiki', 'api' ,'fablab','fablabq','log::','comp','init']);
 if ($cliOptions == null) {
 echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
@@ -66,6 +73,7 @@ if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
     }
 };
 
+
 message('End '.date("h:i:sa"),5);
 
 function getSpaceApi() {
@@ -86,8 +94,6 @@ function getSpaceApi() {
         foreach ($hs_array as $space => $url) {
 
             message('Space '.$space);
-
-            //check if exist heatmap, if not create
 
             $foundError = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($url),"lastcurlerror[>]" =>0, "curlerrorcount[>]"=>3]);
             $state = null;
@@ -132,30 +138,27 @@ function getSpaceApi() {
                     };
 
                     //translate spaceapi array to geojson array
-                    $full_address = explode(',',(isset($apiJson['location']['address'] )) ? $apiJson['location']['address'] : '' );
+                    $full_address = explode(',',(isset($apiJson['location']['address'] )) ?? '' );
 
                     $address = (isset($full_address[0])) ? trim($full_address[0]) : '';
-                    $zip = (isset($full_address[1] )) ? trim($full_address[1]) : '' ;
-                    $city = (isset($full_address[2])) ? trim($full_address[2]) : '' ;
+                    $zip = (isset($full_address[1])) ? trim($full_address[1]) : '';
+                    $city = (isset($full_address[2])) ? trim($full_address[2]) : '';
 
-                    $email = (isset($apiJson['contact']['email'] )) ? $apiJson['contact']['email'] : '' ;
-                    $phone = (isset($apiJson['contact']['phone'] )) ? $apiJson['contact']['phone'] : '' ;
+                    $email = $apiJson['contact']['email'] ?? '' ;
+                    $phone = $apiJson['contact']['phone'] ?? '';
 
                     addspace( $array_geo, $apiJson['space'] , $lon,$lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url,'A');
 
                     updateSpaceDatabase('A',cleanUrl($url),$space,0,$lon,$lat);
 
-                    updateSpaceHeatmap($space, $state, 1, $getApiResult['json']);
+                    updateSpaceHeatmap($space, $state, 1, $url ,$getApiResult['json']);
 
-                    //updateSpaceHeatmapSpace($space,1, $getApiResult['json']);
 
                 } else {
                     message("Skip $space - error ".$getApiResult['error'],5);
                     updateSpaceDatabase('A',cleanurl($url),$space,$getApiResult['error'],$lon,$lat);
 
-                    updateSpaceHeatmap($space, $state, 0, $getApiResult['json']);
-                    
-                    //updateSpaceHeatmapSpace($space, 0, $getApiResult['json']);
+                    updateSpaceHeatmap($space, $state, 0, $url ,$getApiResult['json']);
 
                 };
             };
@@ -169,61 +172,106 @@ function getSpaceApi() {
     // }
 };
 
-function updateSpaceHeatmap($space,$state,$status,$json) {
+function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
     global $mysqli;
+
     $hashname = md5($space);
     $open = (int) $state;
 
-    if ($status==1) {
-        $sql = "INSERT INTO data_$hashname(ts, open) VALUES('" . date('Y-m-d H:m:s') . "', $open)";
+    //if space not present create entry and data table
+    $sql = "SELECT count(*) as totaal FROM spaces WHERE spaces.key='$hashname'";
+    if (!$result = $mysqli->query($sql)) {
+        echo "SQL1 = " . $sql . PHP_EOL;
+        echo "SQL conn Error :" . $mysqli->connect_error;
+        echo "SQL Error :" . $mysqli->error;
+    };
+    $row = $result->fetch_assoc();
+
+    //New space create needed data
+    if ($row["totaal"] == 0 ) {
+        echo "new space $space,create".PHP_EOL;
+
+        $logo = $json['logo'] ?? '';
+        $timezone = $json['location']['timezone'] ?? null;
+
+        if ($timezone == null) {
+            $lat = $json['location']['lat'] ?? $json['lat'];
+            $lon = $json['location']['lon'] ?? $json['lon'];
+
+            $timezone = getTimeZone($lon, $lat);
+        };
+
+        //cur.execute("INSERT INTO spaces(`key`, name, url, logo) VALUES(%s, %s, %s, '')", (key, name, value))
+        //$sql = "INSERT INTO spaces(spaces.key,name) VALUES('" . $hashname."','".$space."')";
+        $sql = "INSERT INTO spaces(spaces.key,spaces.name,logo,timezone) VALUES('$hashname','$space','$logo','$timezone')";
         if (!$result = $mysqli->query($sql)) {
-            echo "SQL = " . $sql . PHP_EOL;
-            echo "SQL conn Error :".$mysqli->connect_error;
+            echo "SQL1 = " . $sql . PHP_EOL;
+            echo "SQL conn Error :" . $mysqli->connect_error;
+            echo "SQL Error :" . $mysqli->error;
+        };
+
+        //cur.execute("CREATE TABLE data_%s(ts DATETIME NOT NULL, open INT(3) NOT NULL DEFAULT '0')" % key)
+        $sql = "CREATE TABLE data_$hashname(ts DATETIME NOT NULL, open INT(3) NOT NULL DEFAULT '0')";
+        if (!$result = $mysqli->query($sql)) {
+            echo "SQL1 = " . $sql . PHP_EOL;
+            echo "SQL conn Error :" . $mysqli->connect_error;
             echo "SQL Error :" . $mysqli->error;
         };
     };
 
     if ($status==1) {
-        $ok=1;
-        $error=0;
-    } else {
-        $ok=0;
-        $error=1;
-    }
-    //do via bind statement.
-    $sql = "UPDATE spaces SET get_err=get_err+$error,get_ok=get_ok + $ok, get_total=get_total + 1, lns=$open WHERE spaces.key='$hashname'";
-    if (!$result = $mysqli->query($sql)) {
-        echo "SQL2 = " . $sql . PHP_EOL;
-        echo "SQL conn Error :" . $mysqli->connect_error;
-        echo "SQL Error :" . $mysqli->error;
+        $sql = "INSERT INTO data_$hashname(ts, open) VALUES('" . date('Y-m-d H:m:s') . "', $open)";
+        if (!$result = $mysqli->query($sql)) {
+            echo "SQL2 = " . $sql . PHP_EOL;
+            echo "SQL conn Error :".$mysqli->connect_error;
+            echo "SQL Error :" . $mysqli->error;
+        };
     };
+
+    // if ($status==1) {
+    //     $ok=1;
+    //     $error=0;
+    // } else {
+    //     $ok=0;
+    //     $error=1;
+    // }
+
+
+    $stmt = $mysqli->prepare("UPDATE spaces SET get_err=get_err+?,get_ok=get_ok + ? , get_total=get_total + 1, lns=?, sa=?,url =?  WHERE spaces.key=?");
+    if ($stmt) {
+        $ok = ($status == 1);
+        $error = ($status == 0);
+        $jsonString = json_encode($json);
+        $stmt->bind_param('iiisss', $error, $ok, $status, $jsonString, $jsonUrl, $hashname);
+        $stmt->execute();
+        //$stmt->close();
+    };
+
+    // $sql = "UPDATE spaces SET get_err=get_err+$error,get_ok=get_ok + $ok, get_total=get_total + 1, lns=$open WHERE spaces.key='$hashname'";
+    // if (!$result = $mysqli->query($sql)) {
+    //     echo "SQL3 = " . $sql . PHP_EOL;
+    //     echo "SQL conn Error :" . $mysqli->connect_error;
+    //     echo "SQL Error :" . $mysqli->error;
+    // };
 };
 
-// function updateSpaceHeatmapSpace($space,$status,$json) {
-//     global $mysqli;
-//     $hashname = md5($space);
-//     //ok,error
-//     //sa=json
-//     //lns= 1 ok - 0 error
-//     //get_ok,get_err,get_total
-//     // cur.execute("UPDATE spaces SET logo=%s, get_ok=get_ok + 1, get_total=get_total + 1, sa=%s, lns=%s WHERE `key`=%s", (logo, data_in, add, row[0]))
-//     if ($status) {
-//         $ok=1
-//         $error=0
-//     } else {
-//         $ok=0
-//         $error=1
-//     }
+function getTimeZone($lon,$lat) {
+    global $timezoneApiKey;
+    $timezone = null;
+    //$result[] = null;
 
+    $jsonResult = getJSON("http://api.timezonedb.com/v2.1/get-time-zone?key=$timezoneApiKey&format=json&by=position&lat=$lat&lng=$lon");
 
-//     $sql = "UPDATE spaces SET get_error=get_error+$error,get_ok=get_ok + $ok, get_total=get_total + 1, sa='$json', lns=1 WHERE key=$hashname";
+    if   ($jsonResult['error']==0) {
+        //$result['timezone'] = $jsonResult['json']['zoneName'];
+        //$result['offset'] = $jsonResult['json']['gmtOffset'];
 
-//     // if (!$result = $mysqli->query($sql)) {
-//     //     //error?
-//     // };
-
-// };
-
+        //gmtOffset in sec
+        $timezone = $jsonResult['json']['zoneName'];
+    }
+    return $timezone;
+    //return $result;
+};
 
 
 

@@ -27,4 +27,9 @@ $database = new Medoo([
     'database_type' => 'sqlite',
     'database_file' => $databasefile
 ]);
+
+
+// Register for free api key on timezonedb.com
+$timezoneApiKey = '';
+
 ?>

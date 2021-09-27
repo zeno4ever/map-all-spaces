@@ -1,5 +1,7 @@
 <?php
-include '../settings.php';
+require '../private/init.php';
+
+//include '../settings.php';
 
 if ($_GET['pwd'] == $wikiPasswd) {
 	setcookie('wikipw', substr(sha1($wikiPasswd),0,20) , time() + (86400 * 30), "/");

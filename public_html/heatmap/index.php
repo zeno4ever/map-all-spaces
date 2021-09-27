@@ -19,8 +19,8 @@
 			<p>This website retrieves the open/closed status of all hackerspaces registered at <a href="https://spaceapi.io/">spaceapi.io</a>.<br>
 				This data is then displayed in a heatmap.<br>
 				Each space is polled 6 times per hour (every 10 minutes).</p>
-			<p>The heatmaps was original created by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> and moved in 20 spet. 2021 to mapall.space.
-				Right now its in beta, some there might some rough edges right now. This will be solved the coming weeks.</p>
+			<p>The heatmaps was original created by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> and moved in 20 Sept. 2021 to mapall.space.
+				</p>
 
 			<p>Data quality: <?
 								//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
@@ -87,13 +87,6 @@
 		</div>
 		<br>
 		<p>See <a href="open.php">this</a> page to see a global open/closed percentage for all spaces.</p>
-		<br>
-		<p>Suggestions or whatever you feel like saying can be send via e-mail to: <a href="mailto:mail@vanheusden.com">mail@vanheusden.com</a></p>
-		<br>
-		<p>Number of visitors: <? print $counter; ?></p>
-		<br>
-		<p>Source code of this website is on <a href="https://github.com/flok99/spaceapi">GitHub</a>.</p>
-
 		<br>
 		<br>
 

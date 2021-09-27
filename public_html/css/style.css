@@ -26,6 +26,8 @@ nav {
     top: 0;
     right: 0;
     left: 0;
+    font-size: 16px;
+    line-height: 1em;
 }
 
 .menu ul {
@@ -133,13 +135,28 @@ body > div.container {
 .wiki th {
   color: white;
   background: black;
+  border-left: 2ex solid #000;
 }
-.wiki th, td { 
+
+.wiki th td { 
+  Font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
   text-align: left; 
-  padding: 8px;
 }
+.wiki th:last-child { 
+  border-left: 0 solid #000; 
+  background:#000
+}
+.wiki td:last-child { 
+  border-left: 0; 
+}
+.wiki tr:last-child td {
+    border-top: 0 solid;
+}
+
 .wiki tr:nth-child(odd) {background: #EEE;}
 .wiki tr:nth-child(even) {background: #CCC}
+
+
 
 /* one space status */
 .status {
@@ -169,6 +186,10 @@ body > div.container {
 
 
 /* heatmap */
+#header {
+  margin-top: 70px;
+}
+
 table {
         border-collapse: separate;
         background: #ddd;
@@ -183,7 +204,7 @@ td {
 }
 tr:first-child th {
         position: relative;
-        left: -19px;
+        /* left: -19px; */
 }
 
 tr:first-child th:last-child {

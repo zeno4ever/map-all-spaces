@@ -1,9 +1,5 @@
 <?php
 
-// require '../settings.php'; //get secret settings
-// require '../vendor/autoload.php';
-// require '../wiki.php';
-
 require '../private/init.php'; //get secret settings
 
 

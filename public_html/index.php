@@ -66,9 +66,6 @@
         pos = [geoPos.coords.latitude, geoPos.coords.longitude];
     };
 
-        console.log(pos);
-
-
         var map = L.map('map').setView(pos,4); 
         
         // var map = L.map('map').locate({ setView: true, maxZoom: 8 });

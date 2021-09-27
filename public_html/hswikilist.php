@@ -90,7 +90,7 @@ if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd), 0, 20)) {
 
 			echo '<h4>Right now there are ' . count($result) . ' hackerspaces to be check manualy.</h4>';
 			if ($result) {
-				echo '<table class="wiki"><tr><th colspan="3">Hackerspace Name</th></tr>';
+				echo '<table class="wiki"><tr><th colspan="4">Hackerspace Name</th></tr>';
 				foreach ($result as $space) {
 					echo '<tr>';
 					echo '<td><a href="' . $space['wikiurl'] . '" target="_blank">' . $space['name'] . '</a></td>';
