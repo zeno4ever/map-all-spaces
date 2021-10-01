@@ -147,7 +147,8 @@ function getSpaceApi() {
                     $email = $apiJson['contact']['email'] ?? '' ;
                     $phone = $apiJson['contact']['phone'] ?? '';
 
-                    addspace( $array_geo, $apiJson['space'] , $lon,$lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url,'A');
+                    addspace($array_geo, $space, $lon, $lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url, 'A');
+                    //addspace( $array_geo, $apiJson['space'] , $lon,$lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url,'A');
 
                     updateSpaceDatabase('A',cleanUrl($url),$space,0,$lon,$lat);
 
@@ -233,7 +234,8 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
         $ok = ($status == 1);
         $error = ($status == 0);
         $jsonString = json_encode($json);
-        $stmt->bind_param('iiisss', $error, $ok, $status, $jsonString, $jsonUrl, $hashname);
+        $stmt->bind_param('iiisss', $error, $ok, $open, $jsonString, $jsonUrl, $hashname);
+        //$stmt->bind_param('iiisss', $error, $ok, $status, $jsonString, $jsonUrl, $hashname);
         $stmt->execute();
     };
 
