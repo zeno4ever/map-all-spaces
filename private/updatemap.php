@@ -20,18 +20,28 @@ date_default_timezone_set('Europe/Amsterdam');
 $loglevel = 0; //all
 $loglevelfile = 2; //log to logfile
 
-//testing space heatmap
-//$json = json_decode(file_get_contents('https://spaceapi.tkkrlab.nl'),true);
-// $json = json_decode(file_get_contents('tkkrlab_spaceapi.json'),true);
-// updateSpaceHeatmap('TkkrLab555', false, 0, 'https://spaceapi.tkkrlab.nl' ,$json);
-//$result = getTimeZone(6.82053, 52.21633);
-//exit;
+$stmt = $mysqli->prepare("UPDATE spaces SET get_err=get_err+?,get_ok=get_ok + ? , get_total=get_total + 1, lns=?, sa=?,url =?  WHERE spaces.key=?");
+if (!$stmt) {
+    message('Prepaire statement heatmap failed.',5);
+};
 
-$cliOptions = getopt('',['all','wiki', 'api' ,'fablab','fablabq','log::','comp','init']);
+
+$cliOptions = getopt('',['all','wiki', 'api' ,'fablab','fablabq','log::','comp','init','test']);
 if ($cliOptions == null) {
-echo "Usage update.php [options] \n --all    Process all options\n --wiki   Update data from wiki\
- --fablab Update data from fablab.io\n --fablabq Update data from fablab quebec\n --log=1  Define loglevel, 0 everything, 5 only errors\n --init Delete all records and logfile\n --api    Spaceapi geojson\n --val    Validate spaceapi\n --comp   Dedupe wiki\n";
- exit;
+echo "Usage update.php [options]
+    --init Delete all records and logfile
+
+    --all    Process all options, following options are included
+        --wiki    Update data from wiki
+        --fablab  Update data from fablab.io
+        --fablabq Update data from fablab quebec
+        --comp    Dedupe wiki
+        --api     Spaceapi geojson
+
+    --log=1  Define loglevel, 0 everything, 5 only errors
+    --val    Validate spaceapi
+    \n";
+    exit;
 };
 
 message('Start update '.date("h:i:sa"),5);
@@ -55,8 +65,8 @@ if (isset($cliOptions['api']) or isset($cliOptions['all'])) {
 
 if (isset($cliOptions['fablab']) or isset($cliOptions['all'])) {
   getFablabJson();
-
 };
+
 if (isset($cliOptions['fablabq']) or isset($cliOptions['all'])) {
   getFablabQuebecJson();
 };
@@ -73,6 +83,22 @@ if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
     }
 };
 
+if (isset($cliOptions['test'])) {
+    //testing space heatmap
+    //$json = json_decode(file_get_contents('https://spaceapi.tkkrlab.nl'),true);
+    $json = json_decode(file_get_contents('tkkrlab_spaceapi.json'),true);
+    //$json = json_decode(file_get_contents('https://i3detroit.org/spaceapi/status.json'), true);
+    $open = $json['state']['open'];
+    if ($open === true) {
+        message('Open '.$open);
+    } else {
+        message('closed ' . $open);
+
+    }
+    message('Status is nu '. $open,0);
+    updateSpaceHeatmap('i3Detroit', $open, 1, 'https://i3detroit.org/spaceapi/status.json', $json);
+    //$result = getTimeZone(6.82053, 52.21633);
+};
 
 message('End '.date("h:i:sa"),5);
 
@@ -117,16 +143,20 @@ function getSpaceApi() {
 
                     if (isset($apiJson['state']['open'])) {
                         //api v13=>
-                        if ($apiJson['state']['open']) {
+                        if ($apiJson['state']['open'] === true) {
                             $state = true;
                             $icon = '/image/hs_open.png';
-                        } else {
+                        } elseif($apiJson['state']['open'] === false) {
                             $state = false;
                             $icon = '/image/hs_closed.png';
+                        } else {
+                            //null is also valid option
+                            $state = false; //force as closed for heatmap
+                            $icon = '/image/hs.png';
                         };
                     } elseif(isset($apiJson['open'])){
                         //api v<13
-                        if ($apiJson['open']) {
+                        if ($apiJson['open'] === true) {
                             $state = true;
                             $icon = '/image/hs_open.png';
                         } else {
@@ -148,7 +178,6 @@ function getSpaceApi() {
                     $phone = $apiJson['contact']['phone'] ?? '';
 
                     addspace($array_geo, $space, $lon, $lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url, 'A');
-                    //addspace( $array_geo, $apiJson['space'] , $lon,$lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url,'A');
 
                     updateSpaceDatabase('A',cleanUrl($url),$space,0,$lon,$lat);
 
@@ -168,16 +197,16 @@ function getSpaceApi() {
         saveGeoJSON('api.geojson',$array_geo);
     };
     
-    // if ($mysqli) {
-    //     $mysqli->close();
-    // }
 };
 
-function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
+function updateSpaceHeatmap($space,$openstate,$status,$jsonUrl,$json) {
     global $mysqli;
+    global $stmt;
 
     $hashname = md5($space);
-    $open = (int) $state;
+    $open = (int) $openstate;
+
+    message('Heatmap Start - ' .$space,0);
 
     //if space not present create entry and data table
     $sql = "SELECT count(*) as totaal FROM spaces WHERE spaces.key='$hashname'";
@@ -190,7 +219,7 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
 
     //New space create needed data
     if ($row["totaal"] == 0 ) {
-        echo "new space $space,create".PHP_EOL;
+        message(" New space $space,create heatmap table.", 5);
 
         $logo = $json['logo'] ?? '';
         $timezone = $json['location']['timezone'] ?? null;
@@ -200,6 +229,7 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
             $lon = $json['location']['lon'] ?? $json['lon'];
 
             $timezone = getTimeZone($lon, $lat);
+            message(" No timezone set, found zone ".$timezone, 5);
         };
 
         //cur.execute("INSERT INTO spaces(`key`, name, url, logo) VALUES(%s, %s, %s, '')", (key, name, value))
@@ -220,8 +250,11 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
         };
     };
 
+
     if ($status==1) {
-        $sql = "INSERT INTO data_$hashname(ts, open) VALUES('" . date('Y-m-d H:m:s') . "', $open)";
+        message('  Add open status '.$open.'  '.$hashname, 0);
+
+        $sql = "INSERT INTO data_$hashname(ts, open) VALUES(NOW(), $open)";
         if (!$result = $mysqli->query($sql)) {
             echo "SQL2 = " . $sql . PHP_EOL;
             echo "SQL conn Error :".$mysqli->connect_error;
@@ -229,14 +262,21 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
         };
     };
 
-    $stmt = $mysqli->prepare("UPDATE spaces SET get_err=get_err+?,get_ok=get_ok + ? , get_total=get_total + 1, lns=?, sa=?,url =?  WHERE spaces.key=?");
+    // $stmt = $mysqli->prepare("UPDATE spaces SET get_err=get_err+?,get_ok=get_ok + ? , get_total=get_total + 1, lns=?, sa=?,url =?  WHERE spaces.key=?");
     if ($stmt) {
         $ok = ($status == 1);
         $error = ($status == 0);
         $jsonString = json_encode($json);
         $stmt->bind_param('iiisss', $error, $ok, $open, $jsonString, $jsonUrl, $hashname);
-        //$stmt->bind_param('iiisss', $error, $ok, $status, $jsonString, $jsonUrl, $hashname);
+        if ($stmt ===false ) {
+            message('  Bind params failed' . $stmt->error,5);
+        }
         $stmt->execute();
+        if ($stmt === false) {
+            message('  Execute  failed '.$stmt->error,5);
+        }
+    } else {
+        message('  Prepaire failed ' . $stmt->error,5);
     };
 
 };
@@ -244,19 +284,14 @@ function updateSpaceHeatmap($space,$state,$status,$jsonUrl,$json) {
 function getTimeZone($lon,$lat) {
     global $timezoneApiKey;
     $timezone = null;
-    //$result[] = null;
 
     $jsonResult = getJSON("http://api.timezonedb.com/v2.1/get-time-zone?key=$timezoneApiKey&format=json&by=position&lat=$lat&lng=$lon");
 
     if   ($jsonResult['error']==0) {
-        //$result['timezone'] = $jsonResult['json']['zoneName'];
-        //$result['offset'] = $jsonResult['json']['gmtOffset'];
-
         //gmtOffset in sec
         $timezone = $jsonResult['json']['zoneName'];
     }
     return $timezone;
-    //return $result;
 };
 
 
