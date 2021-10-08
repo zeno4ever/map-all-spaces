@@ -83,7 +83,6 @@ if (php_sapi_name()=='cli') {
 	loginRequest( $login_Token );
 	$csrf_Token = getCSRFToken();
 
-
 	//Have or live or test option. 
 	if ( isset($cliOptions['close']) ) {
 		//test with wikiMessage text
@@ -108,7 +107,7 @@ if (php_sapi_name()=='cli') {
 function updateOneHackerSpace($space,$action) {
 	global $wikiApi,$login_Token,$csrf_Token,$wikiMessage;
 
-	$wikiMessage .= "Updated manual via http://mapall.space/hswikilist.php\n";
+	$wikiMessage .= "Updated manual via http://mapall.space/hswikilist.php\n ";
 
 	if (empty($login_Token)) {
 		$login_Token = getLoginToken();
@@ -119,16 +118,23 @@ function updateOneHackerSpace($space,$action) {
 
 	$wikitext = getWikiPage($space);
 
-	$email =  $space['printouts']['Email'][0]  ?? '';
-	$email .= (' , ' . $space['printouts']['Residencies Contact'][0] )?? '';
-	$email = str_replace('mailto:', '', $email);
+	//email
+	preg_match('/^\/|email=(.*)/', $wikitext, $newmail);
 
+	//residencies contact
+	preg_match('/^\/|residencies_contact=(.*)/', $wikitext, $resmail);
 
+	if (isset($newmail[1]) and !isset($resmail[1]))  {
+		$email = $newmail[1];
+	} elseif (isset($resmail[1])) {
+		$email = $resmail[1];
+	};
 
 	switch ($action) {
 		case 'close':
-			if(set($email)) {
+			if(isset($email)) {
 				sendEmail($email,$space,'https://wiki.hackerspaces.org/'.$space);
+				//echo "Send email to :".$email.PHP_EOL;
 			}
 			updateHackerspaceWiki($space,'inactive');
 			break;
@@ -598,7 +604,7 @@ function getCaptchaAnswer($question) {
 		case "This website is for whom? Hint: Read the frontpage":
 			return "Anyone and Everyone";
 			break;
-		case "Hacker_____?":
+		case "Hacker______?":
 			return "spaces";
 			break;
 		default:
