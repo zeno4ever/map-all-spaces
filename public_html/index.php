@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="Map hackerspaces/fablabs/makerspaces " content="Dynamic map with all hackerspace, fablabs and makerspaces">
     <link rel="stylesheet" type="text/css" href="/css/style.css">
-
+    <link rel="apple-touch-icon" href="/image/hslogo.png">
     <!-- If IE use the latest rendering engine -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- Set the page to the width of the device and set the zoon level -->
