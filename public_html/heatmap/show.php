@@ -5,6 +5,7 @@
 <HEAD>
 	<link rel="stylesheet" type="text/css" href="/css/style.css">
 </HEAD>
+
 <BODY>
 	<div id="header">
 		<? include $PRIVATE . '/layout/navigate.php' ?>
@@ -44,11 +45,10 @@
 	<ul>
 		<li><a href="<? print $j['url']; ?>"><? print $j['url']; ?></a><br>
 		<li><? print $j['location']['address']; ?> (<? print $country; ?>)<br>
-		<li><a href="https://www.latlong.net/c/?lat=<? print $j['location']['lat']; ?>&long=<? print $j['location']['lon']; ?>" target="_blank">latitude: <? print $j['location']['lat']; ?> / longitude: <? print $j['location']['lon']; ?></a><br>
+		<li><a href="/index.php?menu=home&lat=<? print $j['location']['lat']; ?>&lon=<? print $j['location']['lon']; ?>" target="_blank">latitude: <? print $j['location']['lat']; ?> / longitude: <? print $j['location']['lon']; ?></a><br>
 		<li>timezone: <? print $their_tz; ?>
 	</ul>
 	<?
-
 	if ($j['state']['open'] == 'true' || $j['open'] == 'true') {
 		$s = "open";
 		$icon = $j['state']['icon']['open'];
@@ -141,8 +141,8 @@
 							}
 
 						?><TABLE class="heatmap"><?
-									print "\n";
-									?><TR>
+													print "\n";
+													?><TR>
 				<TH></TH><?
 							for ($h = 0; $h < 24; $h++) {
 							?><TH><? printf('%02d', $h); ?></TH><?
@@ -188,7 +188,7 @@
 	<br>
 	<br>
 
-	<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a></p>
+	<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> 2021-<?php echo date('Y') ?> &amp; by <a href="https://daveborghuis.nl">Dave Borghuis</a></p>
 
 </body>
 

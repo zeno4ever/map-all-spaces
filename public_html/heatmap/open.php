@@ -75,7 +75,7 @@
 		<br>
 		<br>
 
-		<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a></p>
+		<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> &amp; 2021-<?php echo date('Y') ?> by <a href="https://daveborghuis.nl">Dave Borghuis</a></p>
 </body>
 
 </html>

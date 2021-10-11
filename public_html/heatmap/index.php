@@ -20,7 +20,7 @@
 				This data is then displayed in a heatmap.<br>
 				Each space is polled 6 times per hour (every 10 minutes).</p>
 			<p>The heatmaps was original created by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> and moved in 20 Sept. 2021 to mapall.space.
-				</p>
+			</p>
 
 			<p>Data quality: <?
 								//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
@@ -90,7 +90,7 @@
 		<br>
 		<br>
 
-		<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a></p>
+		<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> &amp; 2021-<?php echo date('Y') ?> by <a href="https://daveborghuis.nl">Dave Borghuis</a></p>
 </body>
 
 </html>

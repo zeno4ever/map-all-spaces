@@ -60,10 +60,27 @@
         <div id="map"></div>
     </div>
     <script>
-        var pos = [51, 12];
+        var pos = [51, 12]; //fallback for default location
 
-        if (navigator.geolocation) {
+        // Circle options
+        var circleOptions = {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0,
+            weight: 6
+        }
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const urllat = urlParams.get('lat');
+        const urllon = urlParams.get('lon');
+        if (urllat != '') {
+            pos = [urllat, urllon];
+            zoom = 13;
+        } else if (navigator.geolocation) {
+            //if location is allowed
             navigator.geolocation.getCurrentPosition(getPos);
+            zoom = 4;
         };
 
         //Callback geolocation
@@ -71,12 +88,11 @@
             pos = [geoPos.coords.latitude, geoPos.coords.longitude];
         };
 
-        var map = L.map('map').setView(pos, 4);
+        var map = L.map('map').setView(pos, zoom);
 
-        // var map = L.map('map').locate({ setView: true, maxZoom: 8 });
-        //var pos = L.GeoIP.getPosition();
-        //51.7491824,12.3034407,4.3z
-        //L.GeoIP.centerMapOnPosition(map);
+        if (urllat !='') {
+            L.circle(pos, 500, circleOptions).addTo(map);
+        }
 
         //attributes for basemap credit (lower right hand corner annotation)
         var streetsAttr = 'Map tiles by Carto, under CC BY 3.0. Data by <a href="https://openstreetmap.org">OpenStreetMap</a>, under ODbL.';
