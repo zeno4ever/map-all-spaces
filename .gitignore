@@ -19,3 +19,8 @@ cookie.txt
 private/init.php
 privatecookie.txt
 private/spaceapilocal.json
+
+# local ssl for testing
+ssl cert/*
+*.crt
+*.key

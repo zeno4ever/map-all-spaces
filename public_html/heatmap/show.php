@@ -74,7 +74,7 @@
 
 																														if ($lastchange != 0) {
 																															?>
-		<p>Last state change: <? print date('F d Y H:i:s', $lastchange); ?> (UTC)</p><?
+		<p>Last state change: <? print date('F d Y H:i:s', $lastchange); ?></p><?
 																														} ?>
 
 	<p>Data quality: <? print sprintf('%.2f%%', $row['q']); ?> (100% is all space-api calls succeeded)</p>
@@ -188,7 +188,7 @@
 	<br>
 	<br>
 
-	<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> 2021-<?php echo date('Y') ?> &amp; by <a href="https://daveborghuis.nl">Dave Borghuis</a></p>
+	<p>(C) 2014-2020 by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> &amp; 2021-<?php echo date('Y') ?> by <a href="https://daveborghuis.nl">Dave Borghuis</a></p>
 
 </body>
 

@@ -17,8 +17,8 @@
     <!-- jquery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <!-- Leaflet v1.0.1 -->
-    <link rel="stylesheet" href="//unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
-    <script src="//unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="//unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="//unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <!--script src="leaflet.featuregroup.subgroup.js"></script-->
     <script src="https://unpkg.com/leaflet.featuregroup.subgroup@1.0.2/dist/leaflet.featuregroup.subgroup.js"></script>
 
@@ -27,8 +27,8 @@
     <script src="/dist/leaflet.spin.min.js" charset="utf-8"></script>
 
     <!-- Leaflet clusters / groeps -->
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/"></script>
 
     <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.Default.css">
     <link rel="stylesheet" type="text/css" href="/dist/MarkerCluster.css">
@@ -60,38 +60,28 @@
         <div id="map"></div>
     </div>
     <script>
-        var pos = [51, 12]; //fallback for default location
+        //const queryString = window.location.search;
+        const urlParams = new URLSearchParams(window.location.search);
 
-        // Circle options
-        var circleOptions = {
-            color: 'red',
-            fillColor: '#f03',
-            fillOpacity: 0,
-            weight: 6
-        }
-
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const urllat = urlParams.get('lat');
-        const urllon = urlParams.get('lon');
-        if (urllat != '') {
-            pos = [urllat, urllon];
-            zoom = 13;
-        } else if (navigator.geolocation) {
+        if (navigator.geolocation && !urlParams.has('lat')) {
             //if location is allowed
             navigator.geolocation.getCurrentPosition(getPos);
-            zoom = 4;
         };
 
-        //Callback geolocation
-        function getPos(geoPos) {
-            pos = [geoPos.coords.latitude, geoPos.coords.longitude];
-        };
+        var map = L.map('map').setView([52, 12], 4); //default zoom on europe
 
-        var map = L.map('map').setView(pos, zoom);
+        map.spin(true);
 
-        if (urllat !='') {
-            L.circle(pos, 500, circleOptions).addTo(map);
+        //overrule default view, force to specified location
+        if (urlParams.has('lat') && urlParams.has('lon')) {
+            const geopos = new L.LatLng(urlParams.get('lat'), urlParams.get('lon'));
+            L.circle(geopos, 500, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0,
+                weight: 6
+            }).addTo(map);
+            map.setView(geopos, 13)
         }
 
         //attributes for basemap credit (lower right hand corner annotation)
@@ -120,126 +110,14 @@
         }).addTo(map);
 
         var layerSpaceApi = L.featureGroup.subGroup(masClusGroup).addTo(map);
+        loadGeoJSON('/api.geojson', layerSpaceApi, 'api');
+
         var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
+        loadGeoJSON('/fablab.geojson', layerSpaceFablab, 'fablab');
+        loadGeoJSON('/fablabq.geojson', layerSpaceFablab, 'fablab');
+
         var layerSpaceWiki = L.featureGroup.subGroup(masClusGroup).addTo(map);
-
-        map.spin(true);
-
-        //spaceapi
-        $.getJSON('/api.geojson', function(cartodbdata) {
-            geojsonlayer = L.geoJson(cartodbdata, {
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties.name) {
-                        var html = '<b>' + feature.properties.name + '</b><br/>' +
-                            feature.properties.address + '<br/>' +
-                            feature.properties.zip + ' ' + feature.properties.city + '<br/>' +
-                            "<a href='" + feature.properties.url + "' target='_blank' >website</a>  " +
-                            "<a href='" + feature.properties.source + "' target='_blank' >source</a>  " +
-                            "<a href='/heatmap/show.php?id=" + feature.properties.name + "' target='_blank' >heatmap</a>"
-                        layer.bindPopup(html).addTo(layerSpaceApi);
-                    };
-                },
-                pointToLayer: function(feature, latlon) {
-                    var iconurl = feature.properties['marker-symbol'];
-                    return new L.Marker(latlon, {
-                        icon: new L.icon({
-                            iconUrl: iconurl,
-                            iconSize: [30, 70],
-                            iconAnchor: [15, 35],
-                            popupAnchor: [0, -25]
-
-                        }),
-                        zIndexOffset: 5000
-                    });
-                }
-            });
-        });
-
-
-        //fablab
-        $.getJSON('/fablab.geojson', function(cartodbdata) {
-            geojsonlayer = L.geoJson(cartodbdata, {
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties.name) {
-                        var html = '<b>' + feature.properties.name + '</b><br/>' +
-                            feature.properties.address + '<br/>' +
-                            feature.properties.zip + ' ' + feature.properties.city + '<br/>' +
-                            "<a href='" + feature.properties.url + "' target='_blank' >website</a>  " +
-                            "<a href='" + feature.properties.source + "' target='_blank' >source</a><br/>"
-                        layer.bindPopup(html).addTo(layerSpaceFablab);
-                    };
-                },
-                pointToLayer: function(feature, latlon) {
-                    var iconurl = feature.properties['marker-symbol'];
-                    return new L.Marker(latlon, {
-                        icon: new L.icon({
-                            iconUrl: iconurl,
-                            iconSize: [30, 70],
-                            iconAnchor: [15, 35],
-                            popupAnchor: [0, -25]
-                        })
-                    });
-                }
-            });
-        });
-
-        //fablabq
-        $.getJSON('/fablabq.geojson', function(cartodbdata) {
-            geojsonlayer = L.geoJson(cartodbdata, {
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties.name) {
-                        var html = '<b>' + feature.properties.name + '</b><br/>' +
-                            feature.properties.address + '<br/>' +
-                            feature.properties.zip + ' ' + feature.properties.city + '<br/>' +
-                            "<a href='" + feature.properties.url + "' target='_blank' >website</a>  " +
-                            "<a href='" + feature.properties.source + "' target='_blank' >source</a><br/>"
-                        layer.bindPopup(html).addTo(layerSpaceFablab);
-                    };
-                },
-                pointToLayer: function(feature, latlon) {
-                    var iconurl = feature.properties['marker-symbol'];
-                    return new L.Marker(latlon, {
-                        icon: new L.icon({
-                            iconUrl: iconurl,
-                            iconSize: [30, 70],
-                            iconAnchor: [15, 35],
-                            popupAnchor: [0, -25]
-                        })
-                    });
-                }
-            });
-        });
-
-
-
-        //wiki
-        $.getJSON('/wiki.geojson', function(cartodbdata) {
-            geojsonlayer = L.geoJson(cartodbdata, {
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties.name) {
-                        var html = '<b>' + feature.properties.name + '</b><br/>' +
-                            feature.properties.address + '<br/>' +
-                            feature.properties.zip + ' ' + feature.properties.city + '<br/>' +
-                            "<a href='" + feature.properties.url + "' target='_blank' >website</a>  " +
-                            "<a href='" + feature.properties.source + "' target='_blank' >source</a><br/>"
-                        layer.bindPopup(html).addTo(layerSpaceWiki);
-                    };
-                },
-                pointToLayer: function(feature, latlon) {
-                    var iconurl = feature.properties['marker-symbol'];
-                    return new L.Marker(latlon, {
-                        icon: new L.icon({
-                            iconUrl: iconurl,
-                            iconSize: [30, 70],
-                            iconAnchor: [15, 35],
-                            popupAnchor: [0, -25]
-                        }),
-                        zIndexOffset: -3000,
-                    });
-                }
-            }) /*.addTo(layerSpaceApi)*/ ;
-        });
-
+        loadGeoJSON('/wiki.geojson', layerSpaceWiki, '');
 
         var overLayMap = {
             "Hackerspace (SpaceAPI)": layerSpaceApi,
@@ -277,6 +155,52 @@
         $(document).ajaxComplete(function(event, xhr, settings) {
             map.spin(false);
         });
+
+        //Callback geolocation
+        function getPos(geoPos) {
+            map.setView([geoPos.coords.latitude, geoPos.coords.longitude], 4)
+        };
+
+        function loadGeoJSON(geofile, geolayer, type) {
+            $.getJSON(geofile, function(cartodbdata) {
+                geojsonlayer = L.geoJson(cartodbdata, {
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties.name) {
+                            var html = '<b>' + feature.properties.name + '</b><br/>' +
+                                feature.properties.address + '<br/>' +
+                                feature.properties.zip + ' ' + feature.properties.city + '<br/>' +
+                                "<a href='" + feature.properties.url + "' target='_blank' >website</a>  " +
+                                "<a href='" + feature.properties.source + "' target='_blank' >source</a>  "
+                            if (type == 'api') {
+                                html += "<a href='/heatmap/show.php?id=" + feature.properties.name + "' target='_blank' >heatmap</a>"
+                            }
+                            layer.bindPopup(html).addTo(geolayer);
+                        };
+                    },
+                    pointToLayer: function(feature, latlon) {
+                        var iconurl = feature.properties['marker-symbol'];
+                        var zIndex = 100;
+                        if (type == 'api') {
+                            zIndex = 500;
+                        } else if (type == 'fablab') {
+                            zIndex = 100;
+                        } else {
+                            zIndex = 200;
+                        }
+                        return new L.Marker(latlon, {
+                            icon: new L.icon({
+                                iconUrl: iconurl,
+                                iconSize: [30, 70],
+                                iconAnchor: [15, 35],
+                                popupAnchor: [0, -25]
+                            }),
+                            zIndexOffset: zIndex
+                        });
+                    }
+                });
+            });
+
+        };
     </script>
     <div class="legend">
         <ul>
