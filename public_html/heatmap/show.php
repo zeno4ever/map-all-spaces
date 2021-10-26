@@ -30,7 +30,6 @@
 
 	$time = new \DateTime('now', new DateTimeZone($their_tz));
 	$timezoneOffset = $time->format('P');
-	//print $timezoneOffset;
 
 	$tz_j = json_decode($row['timezone_long'], TRUE);
 	$country = $tz_j['countryName'];
@@ -47,6 +46,25 @@
 		<li><? print $j['location']['address']; ?> (<? print $country; ?>)<br>
 		<li><a href="/index.php?menu=home&lat=<? print $j['location']['lat']; ?>&lon=<? print $j['location']['lon']; ?>" target="_blank">latitude: <? print $j['location']['lat']; ?> / longitude: <? print $j['location']['lon']; ?></a><br>
 		<li>timezone: <? print $their_tz; ?>
+		<?php
+		//debugging timezone
+		if ($_GET['debug']) {
+			echo '<div id="debug"><p>';
+			echo '<p>Timezone offset=' . $timezoneOffset.'<p>';
+
+			$sql = 'SELECT DATE(ts) as datum, TIME(ts) as tijd, CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tztijd, open FROM ' . $table . ' WHERE ts >=  DATE_SUB(NOW(),INTERVAL 4 WEEK) ORDER BY ts';
+			$result = $mysqli->query($sql);
+
+			while ($row = $result->fetch_array(MYSQLI_ASSOC)) {
+				if ($lastrow['open'] !== $row['open']) {
+					echo $row['datum'] . ' ' . $row['tijd'] . ' TZ -' . $row['tztijd'] . ' ' . $row['open'] . '<p>';
+				};
+				$lastrow = $row;
+			}
+			$result->free_result();
+			echo '</div>';
+		}
+		?> 
 	</ul>
 	<?
 	if ($j['state']['open'] == 'true' || $j['open'] == 'true') {
