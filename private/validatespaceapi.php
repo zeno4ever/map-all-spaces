@@ -1,13 +1,15 @@
 <?php
+/*
+** Script to check if the spaceapi json file is valid. Check for the most common
+** errors and send email to listed emailaddress.
+** 
+** Checks on : CORS, HTTP(S), valid json, valid SSL, last api version, long/lat geo location, 
+** if not updated longer then 6 months, 
+**
+** Created by : Dave Borghuis
+*/
 
 require 'init.php';
-
-// Enable Error Reporting and Display:
-error_reporting(~1);
-ini_set('display_errors', 1);
-//system settings
-set_time_limit(0);// in secs, 0 for infinite
-date_default_timezone_set('Europe/Amsterdam');
 
 validateSpaceApi();
 
@@ -20,26 +22,25 @@ function validateSpaceApi() {
     echo 'Date to old : ' . date('Y-m-d H:i', $dateToOld).PHP_EOL;
 
     $adminMessages = '';
-    $failedEmails = 0;
-    $sendEmails = 0;
+    $apiStatus= [];
 
-    //$getApiDirResult = getJSON('https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json');
-    //$hs_array = $getApiDirResult['json'];
+    //Live
+    $getApiDirResult = getJSON('https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json');
+    $hs_array = $getApiDirResult['json'];
 
-    $getApiDirResult['error'] =0;
-    $hs_array = json_decode(file_get_contents('spaceapilocal.json'),true) ;
-
-    echo $hs_array;
+    //Local test
+    // $getApiDirResult['error'] =0;
+    // $hs_array = json_decode(file_get_contents('spaceapilocal.json'),true) ;
 
     if ($getApiDirResult['error'] != 0) {
         echo 'Space api dir not found, curl error  ', $getApiDirResult['error'];
     } else {
 
-        //loop hackerspaces
+        //loop all hackerspaces
         foreach ($hs_array as $space => $url) {
 
-            echo "-------------------------" . PHP_EOL;
-            echo 'Space ' . $space.' url: '.$url.PHP_EOL;
+            // echo "-------------------------" . PHP_EOL;
+            // echo 'Space ' . $space.' url: '.$url.PHP_EOL;
 
             $emailMessage = '';
             $email = '';
@@ -122,7 +123,7 @@ function validateSpaceApi() {
 
                 $email = $apiJson['contact']['email'] ?? '';
 
-                echo 'email : ' . $email. PHP_EOL;
+                //echo 'email : ' . $email. PHP_EOL;
 
                 if (isset($apiJson['issue_report_channels'][0])){
                     switch ($apiJson['issue_report_channels'][0]) {
@@ -140,7 +141,7 @@ function validateSpaceApi() {
                             $email = $apiJson['contact']['email'];
                             break;
                         case 'twitter':
-                            echo 'Issue via Twitter!'.PHP_EOL;
+                            echo "Issue via Twitter! $space".PHP_EOL;
                             $email = $apiJson['contact']['twitter'];
                             break;                            
                         default: //email
@@ -151,39 +152,46 @@ function validateSpaceApi() {
                 } elseif(isset($apiJson['contact']['issue_mail'])) {
                     $email = $apiJson['contact']['issue_mail'];
                 };
-                echo 'issue email :' . $email . PHP_EOL;
+                //echo 'issue email :' . $email . PHP_EOL;
             };
             // else {
             //     $emailMessage .= '- No valid spaceapi json file found.';
             // };
 
             if ($emailMessage) {
-                echo "Send email to : " . $email . PHP_EOL;
-                echo "Message :" . PHP_EOL . $emailMessage . PHP_EOL;
-                
+                //echo "Send email to : " . $email . PHP_EOL;
+                //echo "Message :" . PHP_EOL . $emailMessage . PHP_EOL;
+
+                echo "-------------------------" . PHP_EOL;
+                echo 'Space ' . $space . ' url: ' . $url . PHP_EOL;
 
                 if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $email = 'spaceapi@mapall.space';
+                    //$email = 'spaceapi@mapall.space';
                     $headers = 'From: spaceapi@mapall.space' . "\r\n" .
                         'Reply-To: spaceapi@mapall.space' . "\r\n";
                     $emailMessage =
-                        "Dear Maker/Hacker,\r\n We (volunteers of spaceapi.io) found some issues with your spaceapi url/json." . PHP_EOL .
-                        "Please fix this issues so that other sites can enjoy your live data. We found the following issues : " . PHP_EOL . PHP_EOL .
+                        "Dear Maker/Hacker,\r\n\r\nWe (volunteers of spaceapi.io) found some issues with your spaceapi url/json on $url. " .
+                    "\r\n\r\nWe found the following issues : " . PHP_EOL .
                         $emailMessage . PHP_EOL .
-                        "To check your spaceapi manual you can use the online validator ( https://spaceapi.io/validator/ ).";
-                    $sendEmails ++;
-                    //mail($email, "", $emailMessage,$headers);
+                    "Please fix this issues so that other sites can enjoy your live data. To check your spaceapi manual you can use the online validator ( https://spaceapi.io/validator/ ).\r\n\r\nRegards,\r\n\r\nDave";
+                    if (mail($email, "Your $space spaceapi", $emailMessage,$headers)) {
+                        $apiStatus['send']++;
+                    } else {
+                        $apiStatus['fail']++;
+                        echo "Sending mail to $space failed!".PHP_EOL;
+                        echo "Found errors : $emailMessage" . PHP_EOL;
+                    }
                 } else {
                     $adminMessages .= $space. " Email: " . $email . PHP_EOL . $emailMessage . PHP_EOL . '******' . PHP_EOL;
-                    echo "ERROR Sendmail : Email $email not valid".PHP_EOL;
-                    $failedEmails++;
+                    echo "ERROR Sendmail : Email $email not valid for $space".PHP_EOL;
+                    echo "Found errors : $emailMessage".PHP_EOL;
+                    $apiStatus['fail']++;
                 };
+            } else {
+                $apiStatus['ok']++;
             };
-            
-
         };
         echo '****************' . PHP_EOL . $adminMessages;
-
     };
-    echo "Failed ". $failedEmails." Send : ". $sendEmails.PHP_EOL;
+    echo "Checked ".$apiStatus['ok']." Failed ". $apiStatus['fail']." Send : ". $apiStatus['send'].PHP_EOL;
 };
