@@ -5,7 +5,11 @@
 ** 
 ** Checks on : CORS, HTTP(S), valid json, valid SSL, last api version, long/lat geo location, 
 ** if not updated longer then 6 months, 
-**
+** 
+** Options to improve : 
+** - use 'curl https://api.spaceapi.community/cache'
+** - link to https://validator.spaceapi.io/ui/?url=http://api.service.z-labor.space/spaceapi.json
+** 
 ** Created by : Dave Borghuis
 */
 
