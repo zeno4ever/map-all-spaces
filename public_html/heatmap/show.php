@@ -55,12 +55,14 @@
 			$sql = 'SELECT DATE(ts) as datum, TIME(ts) as tijd, CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tztijd, open FROM ' . $table . ' WHERE ts >=  DATE_SUB(NOW(),INTERVAL 1 WEEK) ORDER BY ts';
 			$result = $mysqli->query($sql);
 
+			$lastrow=null;
 			while ($row = $result->fetch_array(MYSQLI_ASSOC)) {
 				if ($lastrow['open'] !== $row['open']) {
 					echo $row['datum'] . ' ' . $row['tijd'] . ' TZ -' . $row['tztijd'] . ' ' . $row['open'] . '<p>';
 				};
 				$lastrow = $row;
 			}
+			echo 'Last entry : '. $lastrow['datum'] . ' ' . $lastrow['tijd'] . ' TZ -' . $lastrow['tztijd'] . ' ' . $lastrow['open'] . '<p>';
 			$result->free_result();
 			echo '</div>';
 		}
@@ -108,15 +110,15 @@
 
 	<? require('colors.inc.php'); ?>
 
-	<H2>last week (last 7 days)</H2><?
+	<H2>last week </H2><?
 						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 1 WEEK) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
 
 						?><A NAME="maand"></A>
-	<H2>last month (last 31 days)</H2><?
-						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS 	ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 31 DAY) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
+	<H2>last month </H2><?
+						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS 	ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
 
 						?><A NAME="jaar"></A>
-	<H2>this year (last ~365 days)</H2><?
+	<H2>this year </H2><?
 						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
 
 						?><A NAME="alles"></A>
