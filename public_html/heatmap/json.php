@@ -1,9 +1,7 @@
 <?php
-//add cors headers
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=UTF-8');
 
-//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
 include '../../private/init.php';
 
 $id = md5($_GET['id']);
@@ -29,16 +27,11 @@ $s = "closed";
 if ($j['state']['open'] == 'true' || $j['open'] == 'true')
 	$s = "open";
 
-
-
-//old $query = 'SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $their_tz . '") AS ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 31 DAY) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)';
-//$query = 'SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS 	ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 31 DAY) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)';
 if($period == 'EVERYTHING') {
 	$query = 'SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS ts, sum(open) / count(*) as factor from ' . $table . ' group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)';
 } else {
 	$query = 'SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS 	ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 1 ' . $period . ') group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)';
 }
-
 
 for ($i = 0; $i < 24; $i++)
 	$avgs[$i] = $avgsn[$i] = 0;
@@ -82,45 +75,3 @@ $result['space-state'] = $s;
 print json_encode($result);
 
 flush();
-exit;
-
-doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS 	ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURDATE(), INTERVAL 31 DAY) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
-
-function doit($query)
-{
-	#print "$query<br>\n";
-	global $mysqli;
-
-	for ($i = 0; $i < 24; $i++)
-		$avgs[$i] = $avgsn[$i] = 0;
-
-	$results = $mysqli->query($query);
-
-	while ($row = $results->fetch_assoc()) {
-		$h = $row['hour'];
-
-		$counts[$row['dayofweek']][$h] = $row['open'];
-
-		$avgs[$h] += $row['open'];
-		$avgsn[$h]++;
-	}
-
-	for ($i = 0; $i < 24; $i++) {
-		$h = $i;
-		if ($avgsn[$i] != 0) {
-			$counts['avg'][$h] = $avgs[$i] / $avgsn[$i];
-		} else {
-			$counts['avg'][$h] = 0;
-		}
-	}
-
-	foreach ($counts as $d => $v) {
-		$t = 0;
-		for ($i = 0; $i < 24; $i++)
-			$t += $counts[$d][$i];
-		$counts[$d][24] = $t / 24;
-	}
-
-		flush();
-	}
-
