@@ -71,5 +71,13 @@ The above steps will generate \*.geojson files that will be read by the maps lea
 - [Control groups](https://github.com/Leaflet/Leaflet.markercluster)
 - [Search](https://github.com/stefanocudini/leaflet-search)
 
+## API
 
+You can use the JSON API of this repository:
+
+- url: `https://mapall.space/heatmap/json.php`
+- parameter `id`: id of the hackerspace, example: `TkkrLab`
+- parameter `period`: period of data, one of `week`, `month`, `year`, `everything`
+
+example: https://mapall.space/heatmap/json.php?id=TkkrLab&period=week
 
