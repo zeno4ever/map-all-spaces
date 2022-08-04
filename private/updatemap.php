@@ -84,10 +84,14 @@ if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
 };
 
 if (isset($cliOptions['test'])) {
+    $url = "bla.spaceapi.tkkrlab.nl/";
+    $datetime = calcErrorRetry($url);
+    echo "NextCheck? =".$datetime."\n";
+    //check compare function
+
+    exit;
     //testing space heatmap
-    //$json = json_decode(file_get_contents('https://spaceapi.tkkrlab.nl'),true);
     $json = json_decode(file_get_contents('tkkrlab_spaceapi.json'),true);
-    //$json = json_decode(file_get_contents('https://i3detroit.org/spaceapi/status.json'), true);
     $open = $json['state']['open'];
     if ($open === true) {
         message('Open '.$open);
@@ -95,9 +99,6 @@ if (isset($cliOptions['test'])) {
         message('closed ' . $open);
 
     }
-    message('Status is nu '. $open,0);
-    updateSpaceHeatmap('i3Detroit', $open, 1, 'https://i3detroit.org/spaceapi/status.json', $json);
-    //$result = getTimeZone(6.82053, 52.21633);
 };
 
 message('End '.date("h:i:sa"),5);
@@ -121,10 +122,15 @@ function getSpaceApi() {
 
             message('Space '.$space);
 
-            $foundError = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($url),"lastcurlerror[>]" =>0, "curlerrorcount[>]"=>3]);
+            //$foundError = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($url),"lastcurlerror[>]" =>0, "curlerrorcount[>]"=>3]);
             $state = null;
 
-            if ($foundError) {
+            //calc next check after error
+            //send name errorcount and prev datetime
+            //$errorDatetimeNextRetry = calcErrorRetry($cleanUrl($url));
+
+            //if ($foundError or $errorDatetimeNextRetry>=time) {
+            if (calcErrorRetry(cleanUrl($url))) {
                 message('SKIP (in database with error) for '.$space,4);
             } else {
                 $getApiResult = getJSON($url,null,20);
@@ -504,6 +510,72 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat
         message('SqLite Error '.$errorlog[1]);
     };
 };
+
+function calcErrorRetry($url) {
+    //get data from database
+    global $database;
+
+    $result = $database->select(
+        "space",
+        ["sourcekey",
+        "lastcurlerror" , 
+        "curlerrorcount",
+        "lastdataupdated"
+    ],[
+            "source" => "A",
+            "sourcekey" => cleanUrl($url)]
+    );
+
+    //space not yet in datebase, go on to check
+    if ($result==null) {
+        echo "not in database\n";
+        return false;
+    };
+
+    $lastTime = $result[0]["lastdataupdated"];
+    $lastError = $result[0]["curlerrorcount"];
+    $addTime = 0;
+
+    //$lastError  = 4;
+    // echo "CURL error = ".$result[0]["lastcurlerror"]."\n";
+    // echo "LastError = " . $lastError . "\n";
+
+    //if # retry to big or 0 no processing needed
+    if ($lastError >=5) {
+        return true; //always skip for error
+    } elseif ($lastError == 0) {
+        return false; //always do checks
+    }
+
+
+    switch ($lastError) {
+        case 1:
+            $addTime = strtotime('4 hour', 0);;
+            //$addTime = strtotime('1 minute', 0);
+            break;
+        case 2:
+            $addTime = strtotime('1 day', 0);
+            //$addTime = strtotime('3 minute', 0);
+            break;
+        case 3:
+            $addTime = strtotime('4 days', 0);
+            break;
+        case 4:
+            $addTime = strtotime('8 days', 0);
+            break;
+
+    }
+
+    //debug info calc next date
+    // echo "Curr = " . date('r', $lastTime) . "\n";
+    // echo "Next check on  = ".date('r', $lastTime+$addTime)."\n";
+    // echo "Now = " . date('r', time()) . "\n";
+    // echo "check = ".intval(time() < $lastTime+$addTime)."\n======\n";
+
+    message("Next check on  = " . date('r', $lastTime + $addTime),4);
+
+    return (intval(time() < $lastTime+$addTime));
+}
 
 function getFablabJson() {
     $array_geo = array ("type"=> "FeatureCollection");

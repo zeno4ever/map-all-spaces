@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<? require '../private/init.php';?>
+<? require '../private/init.php'; ?>
 <html lang="en-US">
+
 <head>
 	<link rel="stylesheet" href="/css/style.css" />
 	<meta name="Map hackerspaces/fablabs/makerspaces " content="Dynamic map with all hackerspace, fablabs and makerspaces">
@@ -22,7 +23,7 @@
 
 <body>
 	<div id="header">
-		<? include $PRIVATE.'/layout/navigate.php' ?>
+		<? include $PRIVATE . '/layout/navigate.php' ?>
 	</div>
 	<main id="content">
 		<div class="content">
@@ -49,8 +50,9 @@
 					</li>
 				</ul>
 			</div>
-			Every 1th of the month the database and logfiles are removed and fill again from the sources.<br>
-			If a site couldn't load (http error etc.) it wil be skipped till next monthly update.<br>
+			Every 1th of the month the tempory database and logfiles are removed and fill again from the sources.<br>
+			If a site couldn't load (http error etc.) it will retry in increasingly delays, first after 4 hours, then 1 day, 4 days, 8 days. If after 8 days the site still couldn't read it will be skipped till next month.
+			<br>
 			Still don't see why your site is not included? Check our <a href="/errorlog.txt">error log</a> if we encountered some kind of error.
 			<h2>Can you update my entry?</h2>
 			<div>I don't keep a database of your data, I update this every day/week/month from the mentioned datasources. If you want to see where I got your data from, click on your icon and select 'source'. That should bring you to the data source where you can view your data. Allow at least 24 hours to update on this map.

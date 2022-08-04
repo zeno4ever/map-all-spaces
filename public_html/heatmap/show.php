@@ -52,7 +52,7 @@
 			echo '<div id="debug"><p>';
 			echo '<p>Timezone offset=' . $timezoneOffset.'<p>';
 
-			$sql = 'SELECT DATE(ts) as datum, TIME(ts) as tijd, CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tztijd, open FROM ' . $table . ' WHERE ts >=  DATE_SUB(NOW(),INTERVAL 1 WEEK) ORDER BY ts';
+			$sql = 'SELECT DATE(ts) as datum, TIME(ts) as tijd, CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tztijd, open FROM ' . $table . ' WHERE ts >=  DATE_SUB(NOW(),INTERVAL 1 MONTH) ORDER BY ts';
 			$result = $mysqli->query($sql);
 
 			$lastrow=null;
