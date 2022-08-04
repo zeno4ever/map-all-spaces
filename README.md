@@ -28,13 +28,13 @@ Check if a hackerspace is still active (and edit status if not)
 This is done by reading wiki page of space and determine if site is up, twitter is active and more. If program is sure of the activity the wiki page is set to status 'suspented inactivity' or 'active'.
 
 Source : 
-- [Hackerspace.org wiki](https://wiki.hackerspaces.org)
+* [Hackerspace.org wiki](https://wiki.hackerspaces.org)
 
 Create bot via 
-https://wiki.hackerspaces.org/Special:BotPasswords
+* https://wiki.hackerspaces.org/Special:BotPasswords
 
 Curl Errors
-https://curl.haxx.se/libcurl/c/libcurl-errors.html
+* https://curl.haxx.se/libcurl/c/libcurl-errors.html
 
 ### Instal for local use/test
 Clone this github to a local directory. I asume you have php and composer installed.
@@ -46,19 +46,19 @@ Clone this github to a local directory. I asume you have php and composer instal
 - go to 'public_html' directory and use the php server to enjoy the results ('php -S localhost:8000')
 
 Options of update.php
-  --all    Process all options
-  --wiki   Update data from wiki
-  --fablab Update data from fablab.io
-  --log=0  Define loglevel, 0 for all message, 5 only errors
-  --init   Delete all records and logfile
-  --api    Spaceapi
-  --comp   Dedupe wiki
+*  --all    Process all options
+*  --wiki   Update data from wiki
+*  --fablab Update data from fablab.io
+*  --log=0  Define loglevel, 0 for all message, 5 only errors
+*  --init   Delete all records and logfile
+*  --api    Spaceapi
+*  --comp   Dedupe wiki
 
 With the '--all' option it will : 
-  -get api data, check if json could be retrieved and procesed.
-  -get fablab.io data, only include the 'active' fablabs
-  -get wiki.hackerspaces.org, only active hackerspaces with a location
-  -dedupe above resuls, check name match 45% and distance <200m
+*  -get api data, check if json could be retrieved and procesed.
+*  -get fablab.io data, only include the 'active' fablabs
+*  -get wiki.hackerspaces.org, only active hackerspaces with a location
+*  -dedupe above resuls, check name match 45% and distance <200m
 
 You can only do one part of the processing by giving eg '--wiki' to do only the part of getting and processing the wiki.hackerspaces.org data.
 
@@ -71,5 +71,13 @@ The above steps will generate \*.geojson files that will be read by the maps lea
 - [Control groups](https://github.com/Leaflet/Leaflet.markercluster)
 - [Search](https://github.com/stefanocudini/leaflet-search)
 
+## API
 
+You can use the JSON API of this repository:
+
+- url: `https://mapall.space/heatmap/json.php`
+- parameter `id`: id of the hackerspace, example: `TkkrLab`
+- parameter `period`: period of data, one of `week`, `month`, `year`, `everything`
+
+example: https://mapall.space/heatmap/json.php?id=TkkrLab&period=week
 
