@@ -122,16 +122,27 @@ function getSpaceApi() {
 
             message('Space '.$space);
 
-            //$foundError = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($url),"lastcurlerror[>]" =>0, "curlerrorcount[>]"=>3]);
             $state = null;
 
-            //calc next check after error
-            //send name errorcount and prev datetime
-            //$errorDatetimeNextRetry = calcErrorRetry($cleanUrl($url));
+            $nextTimeDate = '';
+            if (calcErrorRetry(cleanUrl($url),$nextTimeDate)) {
+                $icon = '/image/hs.png';
+                $result = $database->select(
+                    "space","*",
+                    [
+                        "source" => "A",
+                        "sourcekey" => cleanUrl($url)
+                    ]
+                );
+                //if in database place icon on map
+                if ($result !== null) {
+                    //message('Space added to map, not open/close status.',4);
+                    //message(" add to GEO  $space lon= ".$result[0]['lon']."lat = ".$result[0]['lat']. " icon = ". $icon. "Next check :". $nextTimeDate,4);
+                    addspace($array_geo, $space, $result[0]["lat"], $result[0]["lon"], "Last Error :". $result[0]["lastcurlerror"], "Next check : ".$nextTimeDate, "","", "", "", $icon, $url, 'A');
+                };
+                message('SKIP (in database with '. $result[0]["curlerrorcount"].' errors, last error '. $result[0]["lastcurlerror"].' ) for ' . $space . " next check on " . $nextTimeDate, 4);
 
-            //if ($foundError or $errorDatetimeNextRetry>=time) {
-            if (calcErrorRetry(cleanUrl($url))) {
-                message('SKIP (in database with error) for '.$space,4);
+
             } else {
                 $getApiResult = getJSON($url,null,20);
 
@@ -212,7 +223,7 @@ function updateSpaceHeatmap($space,$openstate,$status,$jsonUrl,$json) {
     $hashname = md5($space);
     $open = (int) $openstate;
 
-    message('Heatmap Start - ' .$space,0);
+    //message('Heatmap Start - ' .$space,0);
 
     //if space not present create entry and data table
     $sql = "SELECT count(*) as totaal FROM spaces WHERE spaces.key='$hashname'";
@@ -238,8 +249,6 @@ function updateSpaceHeatmap($space,$openstate,$status,$jsonUrl,$json) {
             message(" No timezone set, found zone ".$timezone, 5);
         };
 
-        //cur.execute("INSERT INTO spaces(`key`, name, url, logo) VALUES(%s, %s, %s, '')", (key, name, value))
-        //$sql = "INSERT INTO spaces(spaces.key,name) VALUES('" . $hashname."','".$space."')";
         $sql = "INSERT INTO spaces(spaces.key,spaces.name,logo,timezone) VALUES('$hashname','$space','$logo','$timezone')";
         if (!$result = $mysqli->query($sql)) {
             echo "SQL1 = " . $sql . PHP_EOL;
@@ -258,8 +267,6 @@ function updateSpaceHeatmap($space,$openstate,$status,$jsonUrl,$json) {
 
 
     if ($status==1) {
-        message('  Add open status '.$open.'  '.$hashname, 0);
-
         $sql = "INSERT INTO data_$hashname(ts, open) VALUES(NOW(), $open)";
         if (!$result = $mysqli->query($sql)) {
             echo "SQL2 = " . $sql . PHP_EOL;
@@ -460,7 +467,6 @@ function validateSpaceApi()
 
 
         };
-        //saveGeoJSON('api.geojson', $array_geo);
     };
 };
 
@@ -511,8 +517,7 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat
     };
 };
 
-function calcErrorRetry($url) {
-    //get data from database
+function calcErrorRetry($url,&$nextTimeDate) {
     global $database;
 
     $result = $database->select(
@@ -528,7 +533,6 @@ function calcErrorRetry($url) {
 
     //space not yet in datebase, go on to check
     if ($result==null) {
-        echo "not in database\n";
         return false;
     };
 
@@ -536,26 +540,20 @@ function calcErrorRetry($url) {
     $lastError = $result[0]["curlerrorcount"];
     $addTime = 0;
 
-    //$lastError  = 4;
-    // echo "CURL error = ".$result[0]["lastcurlerror"]."\n";
-    // echo "LastError = " . $lastError . "\n";
-
     //if # retry to big or 0 no processing needed
-    if ($lastError >=5) {
+    if ($lastError >= 4) {
+        $nextTimeDate ='1th of next month';
         return true; //always skip for error
     } elseif ($lastError == 0) {
         return false; //always do checks
     }
 
-
     switch ($lastError) {
         case 1:
             $addTime = strtotime('4 hour', 0);;
-            //$addTime = strtotime('1 minute', 0);
             break;
         case 2:
             $addTime = strtotime('1 day', 0);
-            //$addTime = strtotime('3 minute', 0);
             break;
         case 3:
             $addTime = strtotime('4 days', 0);
@@ -566,14 +564,7 @@ function calcErrorRetry($url) {
 
     }
 
-    //debug info calc next date
-    // echo "Curr = " . date('r', $lastTime) . "\n";
-    // echo "Next check on  = ".date('r', $lastTime+$addTime)."\n";
-    // echo "Now = " . date('r', time()) . "\n";
-    // echo "check = ".intval(time() < $lastTime+$addTime)."\n======\n";
-
-    message("Next check on  = " . date('r', $lastTime + $addTime),4);
-
+    $nextTimeDate = date('Y-m-d H:i:s',$lastTime + $addTime);
     return (intval(time() < $lastTime+$addTime));
 }
 
@@ -925,7 +916,6 @@ function distance($lat1, $lon1, $lat2, $lon2, $unit) {
 
 function addspace(&$array_geo, $name, $lat, $lon, $address='', $zip='', $city='', $url, $email = '', $phone= '', $icon='/hsmap/hs.png',$source='',$sourcetype='A') 
 {
-
         $array_geo['features'][] = array(
         "type"=> "Feature",
         "geometry" => array (

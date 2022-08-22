@@ -45,15 +45,25 @@
 						<div>Updated weekly. (Last update
 							<?php echo date("F d Y H:i:s.",  filemtime("./fablabq.geojson")); ?>)</div>
 					</li>
-					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> semantic data<div>Only added to map when space is active, has more then 1 member and site is online. Extra check if a wiki entry is als added by API or Fablab, if so remove wiki entry from map. (Dupe = 2 entrys are less then 200m apart and name match for 45% or more) Updated weekly. (Last update
+					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> semantic data<div>Only added to map when space is active, has more then 1 member and site is online. Extra check if a wiki entry is als added by API or Fablab, if so remove wiki entry from map. (Duplicate = 2 entrys are less then 200m apart and name match for 45% or more) Updated weekly. (Last update
 							<?php echo date("F d Y H:i:s.",  filemtime("./wiki.geojson")); ?>)</div>
 					</li>
 				</ul>
 			</div>
-			Every 1th of the month the tempory database and logfiles are removed and fill again from the sources.<br>
-			If a site couldn't load (http error etc.) it will retry in increasingly delays, first after 4 hours, then 1 day, 4 days, 8 days. If after 8 days the site still couldn't read it will be skipped till next month.
-			<br>
+			Every 1th of the month the temporary database and logfiles are removed and fill again from the sources.<br>
+			If a site couldn't load (http error etc.) it will retry in increasingly delays, first after 4 hours, then 1 day, 4 days, 8 days. If after 8 days the site still couldn't read it will be skipped till 1th of next month.
 			Still don't see why your site is not included? Check our <a href="/errorlog.txt">error log</a> if we encountered some kind of error.
+			<h2>What are the meaning of the error codes ?</h2>
+			<div>I use the following (internal) error codes :<br>
+				<ul>
+					<li>Error 0-99 => <a href="https://curl.se/libcurl/c/libcurl-errors.html" target="_blank">Curl errors</a></li>
+					<li>Error 100-999 => <a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes" target="_blank">HTTP errors</a></li>
+					<li>Error 1000 => No valid json</li>
+					<li>Error 1001 => Duplicate entry wiki/api/fablab data</li>
+					<li>Error >2000 => SSL certificate errors, subtract 2000 to get original error no.</li>
+				</ul>
+			</div>
+			<br>
 			<h2>Can you update my entry?</h2>
 			<div>I don't keep a database of your data, I update this every day/week/month from the mentioned datasources. If you want to see where I got your data from, click on your icon and select 'source'. That should bring you to the data source where you can view your data. Allow at least 24 hours to update on this map.
 			</div>
