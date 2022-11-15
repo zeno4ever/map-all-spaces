@@ -44,7 +44,9 @@ echo "Usage update.php [options]
     exit;
 };
 
-message('Start update '.date("h:i:sa"),5);
+message('Start update '.date("H:i:sa d-m-Y"),5);
+$startTime = time();
+
 
 if (isset($cliOptions['log'])) {
   $loglevel =  $cliOptions['log'];
@@ -101,7 +103,8 @@ if (isset($cliOptions['test'])) {
     }
 };
 
-message('End '.date("h:i:sa"),5);
+
+message('End '.date("H:i:s").' process time '.date("i:s", time() - $startTime)."\n",5);
 
 function getSpaceApi() {
     global $database;
@@ -125,25 +128,25 @@ function getSpaceApi() {
             $state = null;
 
             $nextTimeDate = '';
-            if (calcErrorRetry(cleanUrl($url),$nextTimeDate)) {
-                $icon = '/image/hs.png';
-                $result = $database->select(
-                    "space","*",
-                    [
-                        "source" => "A",
-                        "sourcekey" => cleanUrl($url)
-                    ]
-                );
-                //if in database place icon on map
-                if ($result !== null) {
-                    //message('Space added to map, not open/close status.',4);
-                    //message(" add to GEO  $space lon= ".$result[0]['lon']."lat = ".$result[0]['lat']. " icon = ". $icon. "Next check :". $nextTimeDate,4);
-                    addspace($array_geo, $space, $result[0]["lat"], $result[0]["lon"], "Last Error :". $result[0]["lastcurlerror"], "Next check : ".$nextTimeDate, "","", "", "", $icon, $url, 'A');
-                };
-                message('SKIP (in database with '. $result[0]["curlerrorcount"].' errors, last error '. $result[0]["lastcurlerror"].' ) for ' . $space . " next check on " . $nextTimeDate, 4);
+            //if (calcErrorRetry(cleanUrl($url),$nextTimeDate)) {
+                // $icon = '/image/hs.png';
+                // $result = $database->select(
+                //     "space","*",
+                //     [
+                //         "source" => "A",
+                //         "sourcekey" => cleanUrl($url)
+                //     ]
+                // );
+                // //if in database place icon on map
+                // if ($result !== null) {
+                //     //message('Space added to map, not open/close status.',4);
+                //     //message(" add to GEO  $space lon= ".$result[0]['lon']."lat = ".$result[0]['lat']. " icon = ". $icon. "Next check :". $nextTimeDate,4);
+                //     addspace($array_geo, $space, $result[0]["lat"], $result[0]["lon"], "Last Error :". $result[0]["lastcurlerror"], "Next check : ".$nextTimeDate, "","", "", "", $icon, $url, 'A');
+                // };
+                // message('SKIP (in database with '. $result[0]["curlerrorcount"].' errors, last error '. $result[0]["lastcurlerror"].' ) for ' . $space . " next check on " . $nextTimeDate, 4);
 
 
-            } else {
+            //} else {
                 $getApiResult = getJSON($url,null,20);
 
                 if ( isset($getApiResult['json']) && $getApiResult['error']==0) {
@@ -202,13 +205,33 @@ function getSpaceApi() {
 
 
                 } else {
-                    message("Skip $space - error ".$getApiResult['error'],5);
-                    updateSpaceDatabase('A',cleanurl($url),$space,$getApiResult['error'],$lon,$lat);
 
-                    updateSpaceHeatmap($space, $state, 0, $url ,$getApiResult['json']);
+                        //######
+                        $icon = '/image/hs.png';
+                        $result = $database->select(
+                            "space",
+                            "*",
+                            [
+                                "source" => "A",
+                                "sourcekey" => cleanUrl($url)
+                            ]
+                        );
+                        //if in database place icon on map
+                        if ($result != null) {
+                            //message('Space added to map, not open/close status.',4);
+                            //message(" add to GEO  $space lon= ".$result[0]['lon']."lat = ".$result[0]['lat']. " icon = ". $icon. "Next check :". $nextTimeDate,4);
+                            addspace($array_geo, $space, $result[0]["lat"], $result[0]["lon"], "Last Error :" . $result[0]["lastcurlerror"], "Next check : " . $nextTimeDate, "", "", "", "", $icon, $url, 'A');
+                        };
+                        message('SKIP (in database with ' . $result[0]["curlerrorcount"] . ' errors, last error ' . $result[0]["lastcurlerror"] . ' ) for ' . $space . " next check on " . $nextTimeDate, 4);
+                        //######
 
-                };
-            };
+                        //message("Skip $space - error ".$getApiResult['error'],5);
+                        updateSpaceDatabase('A',cleanurl($url),$space,$getApiResult['error'],$lon,$lat);
+
+                        updateSpaceHeatmap($space, $state, 0, $url ,$getApiResult['json']);
+
+                    };
+            //};
 
         };
         saveGeoJSON('api.geojson',$array_geo);
@@ -441,7 +464,7 @@ function validateSpaceApi()
 
             if ($emailMessage) {
                 //TODO send email
-                $emailMessage = "Hi, we (voluntairs of spaceapi.io) found".PHP_EOL.
+                $emailMessage = "Hi, we (volunteers of spaceapi.io) found".PHP_EOL.
                     "some issues with your spaceapi url/json." . PHP_EOL .
                     "Please fix this issues so that other sites" . PHP_EOL .
                     "can enjoy your live data. We found the following issues : " . PHP_EOL . PHP_EOL .                            
@@ -464,8 +487,6 @@ function validateSpaceApi()
 
             };
             echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-" . PHP_EOL;
-
-
         };
     };
 };
@@ -473,19 +494,30 @@ function validateSpaceApi()
 function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat=0,$lon=0) {
     global $database;
 
-    if (($lat< -90 or $lat > 90) or ($lon < -180 or $lon > 180 )) {
-        message('longitude or latitude wrong for '.$name.' lat='.$lat.' lon='.$lon.' Source='.$source,5);
-    };
+    // if (($lat< -90 or $lat > 90) or ($lon < -180 or $lon > 180 )) {
+    //     message('longitude or latitude wrong for '.$name.' lat='.$lat.' lon='.$lon.' Source='.$source,5);
+    // };
 
-    $found = $database->has("space", ["source" =>$source,"sourcekey" => $sourcekey]);
+    $result = $database->select(
+                "space",
+                "*",
+                [
+                    "source" => $source,
+                    "sourcekey" => $sourcekey
+                ]
+            );
+
+    if ($result != null ) {    
+        $errorcount = $result[0]["curlerrorcount"];
+    }
 
     if ($lastcurlerror!=0) {
-        $errorcount = 1;
+        $errorcount++;
     } else {
         $errorcount = 0;
     }
 
-    if (!$found) {
+    if ($result == null ) {
         $database->insert("space", [
             "source" => $source,
             "sourcekey" => $sourcekey,
@@ -505,7 +537,7 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat
             "lon" => $lon,
             "lat" => $lat,
             "lastcurlerror" => $lastcurlerror,
-            "curlerrorcount[+]" =>$errorcount,
+            "curlerrorcount" => $errorcount,
         ],
           ["source" =>$source,"sourcekey" => $sourcekey]
     );
@@ -541,28 +573,28 @@ function calcErrorRetry($url,&$nextTimeDate) {
     $addTime = 0;
 
     //if # retry to big or 0 no processing needed
-    if ($lastError >= 4) {
+    if ($lastError >= 84 ) { //offline for 2 weeks or more
         $nextTimeDate ='1th of next month';
         return true; //always skip for error
     } elseif ($lastError == 0) {
         return false; //always do checks
     }
 
-    switch ($lastError) {
-        case 1:
-            $addTime = strtotime('4 hour', 0);;
-            break;
-        case 2:
-            $addTime = strtotime('1 day', 0);
-            break;
-        case 3:
-            $addTime = strtotime('4 days', 0);
-            break;
-        case 4:
-            $addTime = strtotime('8 days', 0);
-            break;
+    // switch ($lastError) {
+    //     case 1:
+    //         $addTime = strtotime('4 hour', 0);;
+    //         break;
+    //     case 2:
+    //         $addTime = strtotime('1 day', 0);
+    //         break;
+    //     case 3:
+    //         $addTime = strtotime('4 days', 0);
+    //         break;
+    //     case 4:
+    //         $addTime = strtotime('8 days', 0);
+    //         break;
 
-    }
+    // }
 
     $nextTimeDate = date('Y-m-d H:i:s',$lastTime + $addTime);
     return (intval(time() < $lastTime+$addTime));
@@ -914,7 +946,7 @@ function distance($lat1, $lon1, $lat2, $lon2, $unit) {
   }
 };
 
-function addspace(&$array_geo, $name, $lat, $lon, $address='', $zip='', $city='', $url, $email = '', $phone= '', $icon='/hsmap/hs.png',$source='',$sourcetype='A') 
+function addspace(&$array_geo, $name, $lat, $lon, $address = "", $zip = "", $city= "", $url="", $email = "", $phone= "", $icon='/hsmap/hs.png',$source='',$sourcetype='A') 
 {
         $array_geo['features'][] = array(
         "type"=> "Feature",
