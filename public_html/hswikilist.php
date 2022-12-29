@@ -2,7 +2,7 @@
 require '../private/init.php'; //get secret settings
 require $PRIVATE . '/wiki.php';
 
-if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd), 0, 20)) {
+if (isset($_COOKIE['wikipw']) && $_COOKIE['wikipw'] == substr(sha1($wikiPasswd), 0, 20)) {
 	$validUser = true;
 } else {
 	$validUser = false;
@@ -56,7 +56,7 @@ if ($_COOKIE['wikipw'] == substr(sha1($wikiPasswd), 0, 20)) {
 <body>
 	<main id="content">
 		<div id="header">
-			<? include $PRIVATE . '/layout/navigate.php' ?>
+			<?php include $PRIVATE . '/layout/navigate.php' ?>
 		</div>
 		<div class="pwform">
 			<?php

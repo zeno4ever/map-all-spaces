@@ -1,0 +1,30 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 8889,
+            "askForPassword": true,
+            "driver": "MariaDB",
+            "name": "Mapall",
+            "database": "mapall",
+            "username": "user"
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 8889,
+            "askForPassword": true,
+            "driver": "MariaDB",
+            "name": "mapall",
+            "database": "mapall",
+            "username": "user"
+        }
+    ]
+}

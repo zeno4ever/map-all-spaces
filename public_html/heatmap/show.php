@@ -1,27 +1,48 @@
 <!DOCTYPE html>
-<? include '../../private/init.php'; ?>
+<?php 
+//	include '../../private/init.php'; 
+?>
 <HTML>
-
 <HEAD>
 	<link rel="stylesheet" type="text/css" href="/css/style.css">
 </HEAD>
-
 <BODY>
 	<div id="header">
-		<? include $PRIVATE . '/layout/navigate.php' ?>
+		<?php include $PRIVATE . '/layout/navigate.php' ?>
 	</div>
 
 	<?php
+
+	// $databaseHost = 'localhost:8889';
+	// $databaseUser = 'user';
+	// $databasePassword = '4amiga';
+	// $databaseName = 'mapall';
+
+
+
+
 	//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
+
+	//$mysqli = new mysqli($databaseHost, $databaseUser, $databasePassword, $databaseName);
 
 	$id = md5($_GET['id']);
 	$table = 'data_' . $id;
 
 	$sql = "SELECT sa, url, name, sum(get_ok) * 100 / sum(get_total) as q, timezone, timezone_long FROM spaces WHERE `key`='$id'";
-	$result = $mysqli->query($sql);
-	$row = $result->fetch_assoc();
-	$j = json_decode($row['sa'], TRUE);
 
+	echo $sql;
+	exit;
+	$result = $mysqli->query($sql);
+
+	if ($mysqli->connect_errno) {
+		echo "Failed to connect to MySQL: " . $mysqli->connect_error;
+		exit();
+	}
+
+	// $row = $result->fetch_assoc();
+	// $j = json_decode($row['sa'], TRUE);
+
+	
 	//Timezone calculations
 	$their_tz = $row['timezone'];
 
@@ -34,18 +55,13 @@
 	$tz_j = json_decode($row['timezone_long'], TRUE);
 	$country = $tz_j['countryName'];
 
-	?><h1><? if ($j['space'] == '') print $row['name'];
-			else print $j['space']; ?></h1><?
-
-											?>
-	<!-- <? print $row['url']; ?> --><?
-
-										?><p>
+	?><h1><?php if ($j['space'] == '') print $row['name'];
+			else print $j['space']; ?></h1><p>
 	<ul>
-		<li><a href="<? print $j['url']; ?>"><? print $j['url']; ?></a><br>
-		<li><? print $j['location']['address']; ?> (<? print $country; ?>)<br>
+		<li><a href="<?php print $j['url']; ?>"><? print $j['url']; ?></a><br>
+		<li><?php print $j['location']['address']; ?> (<? print $country; ?>)<br>
 		<li><a href="/index.php?menu=home&lat=<? print $j['location']['lat']; ?>&lon=<? print $j['location']['lon']; ?>" target="_blank">latitude: <? print $j['location']['lat']; ?> / longitude: <? print $j['location']['lon']; ?></a><br>
-		<li>timezone: <? print $their_tz; ?>
+		<li>timezone: <?php print $their_tz; ?>
 		<?php
 		//debugging timezone
 		if ($_GET['debug']) {

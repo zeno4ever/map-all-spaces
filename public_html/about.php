@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<? require '../private/init.php'; ?>
+<?php require '../private/init.php'; ?>
 <html lang="en-US">
 
 <head>
@@ -22,12 +22,12 @@
 
 <body>
 	<div id="header">
-		<? include $PRIVATE . '/layout/navigate.php' ?>
+		<?php include $PRIVATE . '/layout/navigate.php' ?>
 	</div>
 	<main id="content">
 		<div class="content">
 			<h1>About</h1>
-			This site is created by <a href="https://daveborghuis.nl">Dave Borghuis</a> just for fun. If you like it consider to buy me virtual coffie / Club-Mate aka small donation. Most easy is to use <a href="https://paypal.me/zeno4ever">paypal (zeno4ever)</a> or <a href="https://bunq.me/daveborghuis">iDeal (Bunq)</a>.<br>
+			This site is created by <a href="https://daveborghuis.nl">Dave Borghuis</a> just for fun. If you like it consider to buy me virtual coffie / Club-Mate aka small donation. Most easy is to use <a href="https://paypal.me/zeno4ever">paypal (zeno4ever)</a>.<br>
 			<h1>Can i help you?</h1>
 			Cool, thats nice of you. Check the <a href="/faq.php">FAQ</a> how you can contribute to this project.
 		</div>
