@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<? require('colors.inc.php'); ?>
-<? include '../../private/init.php'; ?>
+<?php 
+require('colors.inc.php'); 
+include '../../private/init.php'; 
+?>
 <html>
 
 <HEAD>
@@ -11,7 +13,7 @@
 
 <body>
 	<div id="header">
-		<? include $PRIVATE . '/layout/navigate.php' ?>
+		<?php include $PRIVATE . '/layout/navigate.php' ?>
 	</div>
 	<div style="margin-top: 70px;">
 		<h1>SpaceAPI heatmap</h1>
@@ -22,7 +24,7 @@
 			<p>The heatmaps was original created by <a href="https://www.vanheusden.com/">www.vanheusden.com</a> and moved in 20 Sept. 2021 to mapall.space.
 			</p>
 
-			<p>Data quality: <?
+			<p>Data quality: <?php
 								//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
 
 								$sql = 'select sum(get_ok) * 100 / sum(get_total) as q, sum(lns) * 100 / count(*) as openp from spaces';
@@ -36,21 +38,21 @@
 								$row = $result->fetch_assoc();
 								print sprintf('%.2f%%', $row['q']);
 								?> (100% is all space-api calls succeeded)</p>
-			<p>Percentage of the spaces that are open: <? print sprintf('%.2f%%', $row['openp']); ?></p>
+			<p>Percentage of the spaces that are open: <?php print sprintf('%.2f%%', $row['openp']); ?></p>
 			<p>Click on a hackerspace name to open the heatmap-view.</p>
 
-			<p><? $sql = "SELECT distinct lower(substr(name, 1, 1)) as l FROM spaces ORDER BY name";
+			<p><?php $sql = "SELECT distinct lower(substr(name, 1, 1)) as l FROM spaces ORDER BY name";
 				$result = $mysqli->query($sql);
 				$col = 1;
 				while ($letters = $result->fetch_assoc()) {
-				?><a href="#<? print $letters['l']; ?>" <?
+				?><a href="#<?php print $letters['l']; ?>" <?php
 														if ($col) {
-														?>style="background-color: #606060;" <?
+														?>style="background-color: #606060;" <?php
 																							} else {
-																								?>style="background-color: #808080;" <?
+																								?>style="background-color: #808080;" <?php 
 																																	}
 																																	$col = 1 - $col;
-																																		?>><? print $letters['l']; ?></a><?
+																																		?>><?php print $letters['l']; ?></a><?php 
 																																										}
 																																											?></p>
 
@@ -77,9 +79,9 @@
 				$lns = $space['lns'];
 
 				if ($lns) {
-			?><a href="show.php?id=<?php print urlencode($space['name']); ?>" style="background-color: #60ff60;"><? print $name; ?></a> <?
+			?><a href="show.php?id=<?php print urlencode($space['name']); ?>" style="background-color: #60ff60;"><?php print $name; ?></a> <?
 																																	} else {
-																																		?><a href="show.php?id=<?php print urlencode($space['name']); ?>" style="background-color: #ff6060;"><? print $name; ?></a> <?
+																																		?><a href="show.php?id=<?php print urlencode($space['name']); ?>" style="background-color: #ff6060;"><?php print $name; ?></a> <?
 																																																																}
 																																																															}
 																																																																	?>

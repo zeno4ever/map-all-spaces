@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<? require '../private/init.php'; ?>
+<?php require '../private/init.php'; ?>
 <html lang="en">
 
 <head>
@@ -54,7 +54,7 @@
 
 <body>
     <div id="header">
-        <? include $PRIVATE . '/layout/navigate.php' ?>
+        <?php include $PRIVATE . '/layout/navigate.php' ?>
     </div>
     <div class="container">
         <div id="map"></div>

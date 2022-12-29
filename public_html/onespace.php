@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<? require '../private/init.php'; ?>
+<?php require '../private/init.php'; ?>
 <html lang="en">
 
 <head>
@@ -32,7 +32,7 @@
 
 <body>
     <div id="header">
-        <? include $PRIVATE . '/layout/navigate.php' ?>
+        <?php include $PRIVATE . '/layout/navigate.php' ?>
     </div>
     <div>
         <img id="spaceimage" class="spaceimage" src="/image/hslogo.png">

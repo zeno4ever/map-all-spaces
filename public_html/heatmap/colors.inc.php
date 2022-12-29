@@ -1,4 +1,4 @@
-<?
+<?php
 # from http://www.brandonheyer.com/2013/03/27/convert-hsl-to-rgb-and-rgb-to-hsl-via-php/
 function rgbToHsl( $r, $g, $b ) {
 	$oldR = $r;
@@ -41,7 +41,7 @@ function rgbToHsl( $r, $g, $b ) {
 	}
 
 	return array($h, $l, $s);
-}
+};
 
 function hslToRgb( $h, $l, $s ){
     $r; 
@@ -83,4 +83,4 @@ function hslToRgb( $h, $l, $s ){
 	$b = ( $b + $m  ) * 255;
 
     return array( floor( $r ), floor( $g ), floor( $b ) );
-}
+};
