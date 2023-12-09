@@ -25,7 +25,7 @@ See heatmap of open/closed status of spaces with a spaceapi. Api status is read 
 
 ## Hackerspace Cencus
 Check if a hackerspace is still active (and edit status if not)
-This is done by reading wiki page of space and determine if site is up, twitter is active and more. If program is sure of the activity the wiki page is set to status 'suspented inactivity' or 'active'.
+This is done by reading wiki page of space and determine if site is up, twitter/mastadon is active and more. If program is sure of the activity the wiki page is set to status 'suspented inactivity' or 'active'.
 
 Source : 
 * [Hackerspace.org wiki](https://wiki.hackerspaces.org)
@@ -39,9 +39,9 @@ Curl Errors
 ### Instal for local use/test
 Clone this github to a local directory. I asume you have php and composer installed.
 
--- User composer to install twitter and database libary's.  'composer require catfan/medoo j7mbo/twitter-api-php'
+-- run 'composer install' to install database libary's. 
 - Copy 'init_example.php' to 'init.php' and change paths to reflect your local system. Add the needed api keys/logins. 
-- Run 'php setup.php' to create a sqlite database with table.
+- Run 'mapall_setupdatabase.sql'  to set up database and used tables.
 - You can now get all the data and proces it with 'php update.php'. If you run it for the first time you want to use the options "--init --all"
 - go to 'public_html' directory and use the php server to enjoy the results ('php -S localhost:8000')
 
@@ -70,6 +70,7 @@ The above steps will generate \*.geojson files that will be read by the maps lea
 - [Leaflet](https://leafletjs.com/)
 - [Control groups](https://github.com/Leaflet/Leaflet.markercluster)
 - [Search](https://github.com/stefanocudini/leaflet-search)
+- [database layer](http://github.com/joshcam/PHP-MySQLi-Database-Class) installed via composer
 
 ## API
 
@@ -80,4 +81,3 @@ You can use the JSON API of this repository:
 - parameter `period`: period of data, one of `week`, `month`, `year`, `everything`
 
 example: https://mapall.space/heatmap/json.php?id=TkkrLab&period=week
-

@@ -16,18 +16,6 @@
 
     <!-- jquery -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2M9QVB70G3"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-
-        function gtag() {
-            dataLayer.push(arguments);
-        }
-        gtag('js', new Date());
-        gtag('config', 'G-2M9QVB70G3');
-    </script>
 </head>
 
 <body>
@@ -104,7 +92,7 @@
             $("#header").hide();
             $("#help").hide();
 
-            location.href = '/onespace.html?space=' + encodeURIComponent(spacename);
+            location.href = '/onespace.php?space=' + encodeURIComponent(spacename);
         };
 
         //setInterval(timerSpaceAPI, 10 * 60 * 1000); //every 5 minutes

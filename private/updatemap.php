@@ -1,32 +1,15 @@
 <?php
 
-require 'init.php';
-
-use Medoo\Medoo;
-
-//open database
-$database = new Medoo([
-    'database_type' => 'sqlite',
-    'database_file' => $databasefile
-]);
-
-// Enable Error Reporting and Display:
-error_reporting(~1);
-ini_set('display_errors', 1);
 //system settings
 set_time_limit(0);// in secs, 0 for infinite
 date_default_timezone_set('Europe/Amsterdam');
 
+require 'init.php';
+
 $loglevel = 0; //all
 $loglevelfile = 2; //log to logfile
 
-$stmt = $mysqli->prepare("UPDATE spaces SET get_err=get_err+?,get_ok=get_ok + ? , get_total=get_total + 1, lns=?, sa=?,url =?  WHERE spaces.key=?");
-if (!$stmt) {
-    message('Prepaire statement heatmap failed.',5);
-};
-
-
-$cliOptions = getopt('',['all','wiki', 'api' ,'fablab','fablabq','log::','comp','init','test']);
+$cliOptions = getopt('',['all','wiki', 'api' ,'fablab','fablabq','log::','comp','init','test','val']);
 if ($cliOptions == null) {
 echo "Usage update.php [options]
     --init Delete all records and logfile
@@ -38,8 +21,8 @@ echo "Usage update.php [options]
         --comp    Dedupe wiki
         --api     Spaceapi geojson
 
+    --val      Validate/check  all api space (check code !!)
     --log=1  Define loglevel, 0 everything, 5 only errors
-    --val    Validate spaceapi
     \n";
     exit;
 };
@@ -47,14 +30,14 @@ echo "Usage update.php [options]
 message('Start update '.date("H:i:sa d-m-Y"),5);
 $startTime = time();
 
-
 if (isset($cliOptions['log'])) {
   $loglevel =  $cliOptions['log'];
   echo 'Log level set to '.$cliOptions['log'].PHP_EOL;
 };
 
 if (isset($cliOptions['init']) or array_search('all', $argv)) {
-    $database->delete('space',Medoo::Raw('WHERE true'));
+    $db = MysqliDb::getInstance();
+    $db->delete('mapspace');
     if(!file_exists ( $geojson_path.'errorlog.txt' )) {
         unlink($geojson_path.'errorlog.txt');
     }
@@ -70,12 +53,17 @@ if (isset($cliOptions['fablab']) or isset($cliOptions['all'])) {
 };
 
 if (isset($cliOptions['fablabq']) or isset($cliOptions['all'])) {
-  getFablabQuebecJson();
+    getFablabQuebecJson();
 };
 
 if (isset($cliOptions['wiki'])) {
   getHackerspacesOrgJson();
 };
+
+if (isset($cliOptions['val'])) {
+    validateSpaceApi();
+};
+  
 
 if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
     message('Start Compare',0);
@@ -86,28 +74,18 @@ if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
 };
 
 if (isset($cliOptions['test'])) {
-    $url = "bla.spaceapi.tkkrlab.nl/";
-    $datetime = calcErrorRetry($url);
-    echo "NextCheck? =".$datetime."\n";
-    //check compare function
-
+    echo "TEST FUNCTIE ".PHP_EOL;
     exit;
-    //testing space heatmap
-    $json = json_decode(file_get_contents('tkkrlab_spaceapi.json'),true);
-    $open = $json['state']['open'];
-    if ($open === true) {
-        message('Open '.$open);
-    } else {
-        message('closed ' . $open);
-
-    }
 };
 
 
 message('End '.date("H:i:s").' process time '.date("i:s", time() - $startTime)."\n",5);
 
+/**
+ * Fill all the spaceapi spaces
+ */
 function getSpaceApi() {
-    global $database;
+    $db = MysqliDb::getInstance();
 
     $array_geo = array ("type"=> "FeatureCollection");
 
@@ -125,196 +103,169 @@ function getSpaceApi() {
 
             message('Space '.$space);
 
-            $state = null;
-
             $nextTimeDate = '';
-            //if (calcErrorRetry(cleanUrl($url),$nextTimeDate)) {
-                // $icon = '/image/hs.png';
-                // $result = $database->select(
-                //     "space","*",
-                //     [
-                //         "source" => "A",
-                //         "sourcekey" => cleanUrl($url)
-                //     ]
-                // );
-                // //if in database place icon on map
-                // if ($result !== null) {
-                //     //message('Space added to map, not open/close status.',4);
-                //     //message(" add to GEO  $space lon= ".$result[0]['lon']."lat = ".$result[0]['lat']. " icon = ". $icon. "Next check :". $nextTimeDate,4);
-                //     addspace($array_geo, $space, $result[0]["lat"], $result[0]["lon"], "Last Error :". $result[0]["lastcurlerror"], "Next check : ".$nextTimeDate, "","", "", "", $icon, $url, 'A');
-                // };
-                // message('SKIP (in database with '. $result[0]["curlerrorcount"].' errors, last error '. $result[0]["lastcurlerror"].' ) for ' . $space . " next check on " . $nextTimeDate, 4);
+            $lon = $lat = 0;
+            $icon = '/image/hs.png';
+            $state = false;
 
+            $getApiResult = getJSON($url,null,20);
+         
+            if ( isset($getApiResult['json']) && $getApiResult['error']==0) {
+                $apiJson = $getApiResult['json'];            
 
-            //} else {
-                $getApiResult = getJSON($url,null,20);
+                if (isset($apiJson['location']['lon']) && isset($apiJson['location']['lat'])) {
+                    $lon = $apiJson['location']['lon'];
+                    $lat = $apiJson['location']['lat'];
+                } elseif (isset($apiJson['lon']) && isset($apiJson['lat'])) {
+                    //<v12 api
+                    $lon = $apiJson['lon'];
+                    $lat = $apiJson['lat'];
+                };
 
-                if ( isset($getApiResult['json']) && $getApiResult['error']==0) {
-                    $apiJson = $getApiResult['json'];            
-
-                    if (isset($apiJson['location']['lon']) && isset($apiJson['location']['lat'])) {
-                        $lon = $apiJson['location']['lon'];
-                        $lat = $apiJson['location']['lat'];
-                    } elseif (isset($apiJson['lon']) && isset($apiJson['lat'])) {
-                        //<v12 api
-                        $lon = $apiJson['lon'];
-                        $lat = $apiJson['lat'];
+                if (isset($apiJson['state']['open'])) {
+                    //api v13=>
+                    if ($apiJson['state']['open'] === true) {
+                        $state = true;
+                        $icon = '/image/hs_open.png';
+                    } elseif($apiJson['state']['open'] === false) {
+                        $state = false;
+                        $icon = '/image/hs_closed.png';
                     };
-
-                    if (isset($apiJson['state']['open'])) {
-                        //api v13=>
-                        if ($apiJson['state']['open'] === true) {
-                            $state = true;
-                            $icon = '/image/hs_open.png';
-                        } elseif($apiJson['state']['open'] === false) {
-                            $state = false;
-                            $icon = '/image/hs_closed.png';
-                        } else {
-                            //null is also valid option
-                            $state = false; //force as closed for heatmap
-                            $icon = '/image/hs.png';
-                        };
-                    } elseif(isset($apiJson['open'])){
-                        //api v<13
-                        if ($apiJson['open'] === true) {
-                            $state = true;
-                            $icon = '/image/hs_open.png';
-                        } else {
-                            $state = false;
-                            $icon = '/image/hs_closed.png';
-                        };
+                } elseif(isset($apiJson['open'])){
+                    //api v<13
+                    if ($apiJson['open'] === true) {
+                        $state = true;
+                        $icon = '/image/hs_open.png';
                     } else {
-                        $icon = '/image/hs.png';
+                        $state = false;
+                        $icon = '/image/hs_closed.png';
                     };
+                };
 
-                    //translate spaceapi array to geojson array
-                    $full_address = array_map('trim', explode(',', ($apiJson['location']['address'] ?? '')));
+                //translate spaceapi array to geojson array
+                $full_address = array_map('trim', explode(',', ($apiJson['location']['address'] ?? '')));
 
-                    $address = $full_address[0] ?? '';
-                    $zip = $full_address[1] ?? '';
-                    $city = $full_address[2] ?? '';
+                $address = $full_address[0] ?? '';
+                $zip = $full_address[1] ?? '';
+                $city = $full_address[2] ?? '';
 
-                    $email = $apiJson['contact']['email'] ?? '' ;
-                    $phone = $apiJson['contact']['phone'] ?? '';
+                $email = $apiJson['contact']['email'] ?? '' ;
+                $phone = $apiJson['contact']['phone'] ?? '';
 
-                    addspace($array_geo, $space, $lon, $lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url, 'A');
+                addspace($array_geo, $space, $lon, $lat, $address, $zip, $city, $apiJson['url'], $email, $phone, $icon, $url, 'A');
 
-                    updateSpaceDatabase('A',cleanUrl($url),$space,0,$lon,$lat);
+                updateSpaceDatabase('A',cleanUrl($url),$space,0,$lon,$lat);
+                updateSpaceHeatmap($space, $state, 1, $url ,$getApiResult['json']);
 
-                    updateSpaceHeatmap($space, $state, 1, $url ,$getApiResult['json']);
+            } else {
+                //no realtime api file found, use previous data 
+                $db->where("source", "A"); 
+                $db->where("sourcekey", cleanUrl($url)); 
+                $result = $db->get("mapspace");
 
+                if ($db->count >0) {
+                    //message('Space added to map, not open/close status.',4);
+                    //message(" add to GEO  $space lon= ".$result[0]['lon']."lat = ".$result[0]['lat']. " icon = ". $icon. "Next check :". $nextTimeDate,4);
+                    addspace($array_geo, $space, $result[0]["lat"], $result[0]["lon"], "Last Error :" . $result[0]["lastcurlerror"], "Next check : " . $nextTimeDate, "", "", "", "", $icon, $url, 'A');
+                };
+                message('SKIP (in database with ' . $result[0]["curlerrorcount"] . ' errors, last error ' . $result[0]["lastcurlerror"] . ' ) for ' . $space . " next check on " . $nextTimeDate, 4);
 
-                } else {
+                //message("Skip $space - error ".$getApiResult['error'],5);
+                updateSpaceDatabase('A',cleanurl($url),$space,$getApiResult['error'],$lon,$lat);
 
-                        //######
-                        $icon = '/image/hs.png';
-                        $result = $database->select(
-                            "space",
-                            "*",
-                            [
-                                "source" => "A",
-                                "sourcekey" => cleanUrl($url)
-                            ]
-                        );
-                        //if in database place icon on map
-                        if ($result != null) {
-                            //message('Space added to map, not open/close status.',4);
-                            //message(" add to GEO  $space lon= ".$result[0]['lon']."lat = ".$result[0]['lat']. " icon = ". $icon. "Next check :". $nextTimeDate,4);
-                            addspace($array_geo, $space, $result[0]["lat"], $result[0]["lon"], "Last Error :" . $result[0]["lastcurlerror"], "Next check : " . $nextTimeDate, "", "", "", "", $icon, $url, 'A');
-                        };
-                        message('SKIP (in database with ' . $result[0]["curlerrorcount"] . ' errors, last error ' . $result[0]["lastcurlerror"] . ' ) for ' . $space . " next check on " . $nextTimeDate, 4);
-                        //######
+                updateSpaceHeatmap($space, $state, 0, $url ,$getApiResult['json']);
 
-                        //message("Skip $space - error ".$getApiResult['error'],5);
-                        updateSpaceDatabase('A',cleanurl($url),$space,$getApiResult['error'],$lon,$lat);
-
-                        updateSpaceHeatmap($space, $state, 0, $url ,$getApiResult['json']);
-
-                    };
-            //};
-
+            };
         };
-        saveGeoJSON('api.geojson',$array_geo);
+        saveGeoJSON('api',$array_geo);
     };
     
 };
 
 function updateSpaceHeatmap($space,$openstate,$status,$jsonUrl,$json) {
-    global $mysqli;
-    global $stmt;
+	$db = MysqliDb::getInstance();
 
     $hashname = md5($space);
     $open = (int) $openstate;
+    
+    if (isset($json["location"]["lat"])) {
+        $lat=$json["location"]["lat"];
+    } else {
+        $lat=$json['lon'] ?? 0;
+    }
+    if (isset($json["location"]["lon"])) {
+        $lon=$json["location"]["lon"];
+    } else {
+        $lon=$json['lon'] ?? 0;
+    }
 
-    //message('Heatmap Start - ' .$space,0);
-
-    //if space not present create entry and data table
-    $sql = "SELECT count(*) as totaal FROM spaces WHERE spaces.key='$hashname'";
-    if (!$result = $mysqli->query($sql)) {
-        echo "SQL1 = " . $sql . PHP_EOL;
-        echo "SQL conn Error :" . $mysqli->connect_error;
-        echo "SQL Error :" . $mysqli->error;
-    };
-    $row = $result->fetch_assoc();
-
-    //New space create needed data
-    if ($row["totaal"] == 0 ) {
+    //table data_* aanmaken als deze nog niet bestaat
+    if (! $db->tableExists ("data_$hashname") ) {
         message(" New space $space,create heatmap table.", 5);
 
         $logo = $json['logo'] ?? '';
         $timezone = $json['location']['timezone'] ?? null;
 
         if ($timezone == null) {
-            $lat = $json['location']['lat'] ?? $json['lat'];
-            $lon = $json['location']['lon'] ?? $json['lon'];
-
             $timezone = getTimeZone($lon, $lat);
             message(" No timezone set, found zone ".$timezone, 5);
         };
 
-        $sql = "INSERT INTO spaces(spaces.key,spaces.name,logo,timezone) VALUES('$hashname','$space','$logo','$timezone')";
-        if (!$result = $mysqli->query($sql)) {
-            echo "SQL1 = " . $sql . PHP_EOL;
-            echo "SQL conn Error :" . $mysqli->connect_error;
-            echo "SQL Error :" . $mysqli->error;
-        };
-
-        //cur.execute("CREATE TABLE data_%s(ts DATETIME NOT NULL, open INT(3) NOT NULL DEFAULT '0')" % key)
         $sql = "CREATE TABLE data_$hashname(ts DATETIME NOT NULL, open INT(3) NOT NULL DEFAULT '0')";
-        if (!$result = $mysqli->query($sql)) {
-            echo "SQL1 = " . $sql . PHP_EOL;
-            echo "SQL conn Error :" . $mysqli->connect_error;
-            echo "SQL Error :" . $mysqli->error;
+
+        $db->rawQuery ( $sql);
+        if ($db->getLastErrno() !== 0) {
+            echo "Error  $space. Error: ". $db->getLastError().'  '.__LINE__;
+        }
+
+        $data = Array(
+            "key" => $hashname,
+            "name" => $space,
+            "logo" => $logo,
+            "timezone" =>$timezone,        
+        );
+        $db->insert('heatmspaces',$data);
+        if ($db->getLastErrno() !== 0) {
+            echo "Insert Error  $space. Error: ". $db->getLastError().'  '.__LINE__;
         };
     };
 
 
+
+
+
+    $data_space = array(
+        'get_total' => $db->inc(1),
+        'sa' => json_encode($json), 
+        'url' => $jsonUrl,
+        'lns' => $open,
+        "lat" => $lat,
+        "lon" => $lon,
+        'lastupdated' => $db->now(),
+    );
+
+    //found api file, update data_*
     if ($status==1) {
-        $sql = "INSERT INTO data_$hashname(ts, open) VALUES(NOW(), $open)";
-        if (!$result = $mysqli->query($sql)) {
-            echo "SQL2 = " . $sql . PHP_EOL;
-            echo "SQL conn Error :".$mysqli->connect_error;
-            echo "SQL Error :" . $mysqli->error;
+        $data = array(
+            "ts" => $db->now(),
+            "open" => $open,
+        );
+        $db->insert("data_$hashname",$data);
+        if ($db->getLastErrno() !== 0) {
+            echo "Insert Error  $space. Error: ". $db->getLastError().'  '.__LINE__;
         };
-    };
 
-    // $stmt = $mysqli->prepare("UPDATE spaces SET get_err=get_err+?,get_ok=get_ok + ? , get_total=get_total + 1, lns=?, sa=?,url =?  WHERE spaces.key=?");
-    if ($stmt) {
-        $ok = ($status == 1);
-        $error = ($status == 0);
-        $jsonString = json_encode($json);
-        $stmt->bind_param('iiisss', $error, $ok, $open, $jsonString, $jsonUrl, $hashname);
-        if ($stmt ===false ) {
-            message('  Bind params failed' . $stmt->error,5);
-        }
-        $stmt->execute();
-        if ($stmt === false) {
-            message('  Execute  failed '.$stmt->error,5);
-        }
+        $data_space['get_ok'] = $db->inc(1);
     } else {
-        message('  Prepaire failed ' . $stmt->error,5);
+        $data_space['get_err'] = $db->inc(1);
     };
 
+    $db->where("`key`",$hashname);
+    $db->update('heatmspaces',$data_space);
+    if ($db->getLastErrno() !== 0) {
+        echo "Insert Error  $space. Error: ". $db->getLastError().'  '.__LINE__;
+        echo "SQL ". $db->getLastQuery();
+    };
 };
 
 function getTimeZone($lon,$lat) {
@@ -332,183 +283,20 @@ function getTimeZone($lon,$lat) {
 
 
 
-function validateSpaceApi()
-{
-    echo PHP_EOL . "## Validate Space api json file ". date('Y-m-d H:i').PHP_EOL;
-
-    $dateToOld = strtotime("-3 months");
-    echo 'Date to old : ' . date('Y-m-d H:i', $dateToOld).PHP_EOL;
-
-    $getApiDirResult = getJSON('https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json');
-    $hs_array = $getApiDirResult['json'];
-
-    if ($getApiDirResult['error'] != 0) {
-        message('Space api dir not found, curl error  ', $getApiDirResult['error'], 4);
-    } else {
-
-        //loop hackerspaces
-        foreach ($hs_array as $space => $url) {
-
-            echo 'Space ' . $space.' url: '.$url.PHP_EOL;
-
-            $emailMessage = '';
-            $email = '';
-
-            if (parse_url($url, PHP_URL_SCHEME) == 'http') {
-                $httpsurl = preg_replace("/^http:/i", "https:", $url);
-                echo "Checking https " . $httpsurl . PHP_EOL;
-                $getApiResult = getJSON($httpsurl,null, 20);
-                if (isset($getApiHTTPResult['json']) and $getApiResult['error'] === 0) {
-                    $emailMessage .= "- Spaceapi via https works, update this in spaceapi directory." . PHP_EOL;
-                    $getApiResult = $getApiResult;
-                } else {
-                    $emailMessage .= "- Spaceapi via https failed, consider enable https." . PHP_EOL;
-                    //fallback to normal json
-                    $getApiResult = getJSON($url, null, 20);
-                };
-                echo "End checking https " . PHP_EOL;
-
-            } else {
-                $getApiResult = getJSON($url, null, 20);
-            };
-
-            if($getApiResult['cors'] == false) {
-                $emailMessage .= "- CORS not enabled" . PHP_EOL;
-            };
-
-            // Error 0-99 Curl
-            // Error 100-999 http
-            // Error 1000 no valid json
-            // Error 1001 dupe
-            // ssl >2000
-
-            // Explain the error classes
-            if  ($getApiResult['error'] >= 2000) {
-                $emailMessage .= '- SSL error ' . $getApiResult['error'] - 2000 . PHP_EOL;
-            } elseif ($getApiResult['error'] > 1 and $getApiResult['error'] < 100) {
-                $emailMessage .= '- Curl error ' . $getApiResult['error'] . PHP_EOL;
-            } elseif ($getApiResult['error'] >= 100 and $getApiResult['error'] <= 999) {
-                $emailMessage .= '- HTTP error ' . $getApiResult['error'] . PHP_EOL;
-            } elseif ($getApiResult['error'] >= 1000 and $getApiResult['error'] < 2000) {
-                $emailMessage .= '- JSON error ' . $getApiResult['error'] . PHP_EOL;
-            };
-            
-            if (isset($getApiResult['json']) && $getApiResult['error'] == 0) {
-                $apiJson = $getApiResult['json'];
-
-                if (isset($apiJson['api']) ) {
-                    $api = $apiJson['api'];
-                } elseif ($apiJson['api_compatibility']) {
-                    $api = $apiJson['api_compatibility'][0];
-                } else {
-                    $emailMessage .= '- no api version found'.PHP_EOL;
-                };
-
-                if ($api < 0.13) {
-                    $emailMessage .= '- Please upgrade spaceapi to latest version.' . PHP_EOL;
-                };
-
-                if (isset($apiJson['location']['lon']) && isset($apiJson['location']['lat'])) {
-                    $lon = $apiJson['location']['lon'];
-                    $lat = $apiJson['location']['lat'];
-                } elseif (isset($apiJson['lon']) && isset($apiJson['lat'])) {
-                    //<v12 api
-                    $lon = $apiJson['lon'];
-                    $lat = $apiJson['lat'];
-                };
-
-                if (
-                    $lon < -180 or $lon > 180 or $lat < -90 or $lat > 90
-                ) {
-                    $emailMessage .= '- Wrong lat\lon is : [ lat ' . number_format($lat,4) . '/ lon ' . number_format($lon,4).PHP_EOL;
-                }
-
-                $lastchange = $apiJson['state']['lastchange'] ?? null; //date in epoch
-
-                if (isset($lastchange)) {
-                    if ($lastchange - $dateToOld < 0) {
-                        $emailMessage .= "- Date lastchange longer then 6 months ago. (". date('Y-m-d H:i', $lastchange) .")". PHP_EOL;
-                    };
-                };
-
-                if (isset($apiJson['issue_report_channels'][0])){
-                    echo "Report channel " . $apiJson['issue_report_channels'][0] . PHP_EOL;
-                    switch ($apiJson['issue_report_channels'][0]) {
-                        case 'issue_mail':
-                            $email = $apiJson['contact']['issue_mail'];
-                            //if not a valid email assume its base64 encoded
-                            if (filter_var($email, FILTER_VALIDATE_EMAIL) == false) {
-                                echo "Decode base64 ";
-                                $email = base64_decode($email);
-                            };
-                            break;
-                        case 'ml':
-                            $email = $apiJson['contact']['ml']; 
-                            break;
-                        default: //email
-                            $email = $apiJson['contact']['email']; 
-                            break;
-                    };
-                } else {
-                    $email = $apiJson['contact']['email'] ?? '';
-                };
-
-                echo "email = ".$email.PHP_EOL;
-
-            } else {
-                //message("Skip $space - error " . $getApiResult['error'], 5);
-                $emailMessage .= '- No valid spaceapi json file found.';
-
-            };
-            echo "-------------------------" . PHP_EOL;
-
-            if ($emailMessage) {
-                //TODO send email
-                $emailMessage = "Hi, we (volunteers of spaceapi.io) found".PHP_EOL.
-                    "some issues with your spaceapi url/json." . PHP_EOL .
-                    "Please fix this issues so that other sites" . PHP_EOL .
-                    "can enjoy your live data. We found the following issues : " . PHP_EOL . PHP_EOL .                            
-                     $emailMessage;
-
-                $emailMessage .=  PHP_EOL. "To check your spaceapi manual you can use the online validator ( https://spaceapi.io/validator/ ).";
-
-                echo "Send email to : ".$email.PHP_EOL;
-                echo "Message :". $emailMessage . PHP_EOL;
-
-                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    message("ERROR Sendmail : Email $email not valid", 5);
-                } else {
-                    $email = 'spaceapi@mapall.space';
-                    $headers = 'From: spaceapi@mapall.space' . "\r\n" .
-                    'Reply-To: spaceapi@mapall.space' . "\r\n";
-                    mail($email, "", $emailMessage,$headers);
-                };
-
-
-            };
-            echo "+-+-+-+-+-+-+-+-+-+-+-+-+-+-" . PHP_EOL;
-        };
-    };
-};
-
 function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat=0,$lon=0) {
-    global $database;
+	$db = MysqliDb::getInstance();
 
-    // if (($lat< -90 or $lat > 90) or ($lon < -180 or $lon > 180 )) {
-    //     message('longitude or latitude wrong for '.$name.' lat='.$lat.' lon='.$lon.' Source='.$source,5);
-    // };
+    $db->where('source', $source);
+    $db->where("sourcekey" , $sourcekey);
+    // $result = $db->get("mapspace");
+    $result = $db->getOne("mapspace");
+	if ($db->getLastErrno() !== 0) {
+		echo "GetOne  $source. Error: ". $db->getLastError();
+	}
 
-    $result = $database->select(
-                "space",
-                "*",
-                [
-                    "source" => $source,
-                    "sourcekey" => $sourcekey
-                ]
-            );
-
-    if ($result != null ) {    
-        $errorcount = $result[0]["curlerrorcount"];
+    $errorcount = 0;
+    if ($db->count >0 ) {    
+        $errorcount = $result["curlerrorcount"];
     }
 
     if ($lastcurlerror!=0) {
@@ -517,88 +305,34 @@ function updateSpaceDatabase ($source,$sourcekey,$name ='',$lastcurlerror=0,$lat
         $errorcount = 0;
     }
 
+    $data = array(
+        "source" => $source,
+        "sourcekey" => $sourcekey,
+        // "lastdataupdated" => time(), //$db->now(),
+        "lastdataupdated" => $db->now(),
+        "name" => $name,
+        "lon" => $lon,
+        "lat" => $lat,
+        "lastcurlerror" => $lastcurlerror,
+        "curlerrorcount" => $errorcount, 
+    );
+
     if ($result == null ) {
-        $database->insert("space", [
-            "source" => $source,
-            "sourcekey" => $sourcekey,
-            "lastdataupdated" => time(),
-            "name" => $name,
-            "lon" => $lon,
-            "lat" => $lat,
-            "lastcurlerror" => $lastcurlerror,
-            "curlerrorcount" => $errorcount, 
-        ]);
+        $db->insert("mapspace",$data);
+        if ($db->getLastErrno() !== 0) {
+            echo "Insert $source. Error: ". $db->getLastError();
+        }
+
     } else {
-        $database->update("space", [
-            "source" => $source,
-            "sourcekey" => $sourcekey,
-            "lastdataupdated" => time(),
-            "name" => $name,
-            "lon" => $lon,
-            "lat" => $lat,
-            "lastcurlerror" => $lastcurlerror,
-            "curlerrorcount" => $errorcount,
-        ],
-          ["source" =>$source,"sourcekey" => $sourcekey]
-    );
-    }
+        $db->where('source', $source);
+        $db->where("sourcekey" , $sourcekey);
+        $db->update("mapspace",$data);
+        if ($db->getLastErrno() !== 0) {
+            echo "Update $source. Error: ". $db->getLastError();
+        }
 
-    $errorlog = $database->error();
-    if ($errorlog[1] != 0) {
-        message('SqLite Error '.$errorlog[1]);
-    };
+    }
 };
-
-function calcErrorRetry($url,&$nextTimeDate) {
-    global $database;
-
-    $result = $database->select(
-        "space",
-        ["sourcekey",
-        "lastcurlerror" , 
-        "curlerrorcount",
-        "lastdataupdated"
-    ],[
-            "source" => "A",
-            "sourcekey" => cleanUrl($url)]
-    );
-
-    //space not yet in datebase, go on to check
-    if ($result==null) {
-        return false;
-    };
-
-    $lastTime = $result[0]["lastdataupdated"];
-    $lastError = $result[0]["curlerrorcount"];
-    $addTime = 0;
-
-    //if # retry to big or 0 no processing needed
-    if ($lastError >= 84 ) { //offline for 2 weeks or more
-        $nextTimeDate ='1th of next month';
-        return true; //always skip for error
-    } elseif ($lastError == 0) {
-        return false; //always do checks
-    }
-
-    // switch ($lastError) {
-    //     case 1:
-    //         $addTime = strtotime('4 hour', 0);;
-    //         break;
-    //     case 2:
-    //         $addTime = strtotime('1 day', 0);
-    //         break;
-    //     case 3:
-    //         $addTime = strtotime('4 days', 0);
-    //         break;
-    //     case 4:
-    //         $addTime = strtotime('8 days', 0);
-    //         break;
-
-    // }
-
-    $nextTimeDate = date('Y-m-d H:i:s',$lastTime + $addTime);
-    return (intval(time() < $lastTime+$addTime));
-}
 
 function getFablabJson() {
     $array_geo = array ("type"=> "FeatureCollection");
@@ -610,7 +344,7 @@ function getFablabJson() {
     foreach ($getFablabJsonResult['json'] as $fablab ) {
         //echo "Updating ".$fablab['name'].PHP_EOL;
 
-        if ( $fablab['activity_status'] =='active') { //isset($fablab) && 
+        if ( $fablab['activity_status'] !='closed' && (isset($fablab['latitude']) || isset($fablab['longitude'])) ) { 
             $id = $fablab['id'];
 
             $icon = '/image/fablab.png';
@@ -619,9 +353,12 @@ function getFablabJson() {
 
             $nice_name = $fablab['slug'];
 
-            if (isset($fablab['latitude']) && isset($fablab['longitude'])) {
+            if (isset($fablab['latitude']) || isset($fablab['longitude'])) {
                 $lat = $fablab['latitude'];
                 $lon = $fablab['longitude'];
+            } else {
+                $lat=0;
+                $lon = 0;    
             }; 
 
             $address = (isset($fablab['address_1'])) ? trim($fablab['address_1']) : '';
@@ -647,7 +384,7 @@ function getFablabJson() {
             message("Skip ".$fablab['name'].' not active.',5);
        }; 
    };
-   saveGeoJSON('fablab.geojson',$array_geo);
+   saveGeoJSON('fablab',$array_geo);
 };
 
 function getFablabSite($links,$slug = '') {
@@ -689,7 +426,7 @@ function getFablabSite($links,$slug = '') {
 };
 
 function getHackerspacesOrgJson() {
-    global $database;
+	$db = MysqliDb::getInstance();
 
     $array_geo = array ("type"=> "FeatureCollection");
     $req_results = 50;
@@ -725,17 +462,24 @@ function getHackerspacesOrgJson() {
             $spaceapi = (isset($space['printouts']['SpaceAPI'][0])) ?  $space['printouts']['SpaceAPI'][0]  : '';
             $source = $space['fullurl'];
             $lastupdate = date_create(date("Y-m-d\TH:i:s", $space['printouts']['Modification date'][0]['timestamp']));
+            $now = date_create(date('Y-m-d\TH:i:s'));
+
             $interval = date_diff($now, $lastupdate)->format('%a'); 
 
             //if space not added to map with api add it here.
-            $foundSpaceApi = $database->has("space", ["source"=>"A","sourcekey" => cleanUrl($spaceapi),"lastcurlerror" =>0]);
+            $db->where("source","A");
+            $db->where("sourcekey" , cleanUrl($spaceapi));
+            $db->where("lastcurlerror",0);
+            $foundSpaceApi = $db->has("mapspace");
 
             if ($foundSpaceApi) {
                message('SKIP '.$fullname).' foundapi:'. $spaceapi;     
             } else {
 
                 //check for results previos run
-                $wiki_curlerror = $database->get("space",["lastcurlerror","curlerrorcount"], ["source"=>"W","sourcekey"  => $source]);
+                $db->where("source","W");
+                $db->where("sourcekey", $source);
+                $wiki_curlerror = $db->getOne("mapspace");
 
                 if (isset($wiki_curlerror["lastcurlerror"])) {
                     if ($wiki_curlerror["lastcurlerror"]==0) {
@@ -765,11 +509,16 @@ function getHackerspacesOrgJson() {
         //     return;
         // }
 
-        $req_page++;
-        $result = getPageHackerspacesOrg($req_results,$req_page);
+        if (count($result) == $req_results ) {
+            $req_page++;
+            $result = getPageHackerspacesOrg($req_results,$req_page);
+        } else {
+            $result = null;
+        }
     };
+
     if ($req_page !=0) {
-       saveGeoJSON('wiki.geojson',$array_geo);        
+       saveGeoJSON('wiki',$array_geo);        
     } else {
         message('No wiki spaces found, nothing written');
     }
@@ -801,8 +550,6 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 
 
 function getFablabQuebecJson() {
-    global $database;
-
     $array_geo = array ("type"=> "FeatureCollection");
     $req_results = 50;
     $req_page = 0;
@@ -815,6 +562,7 @@ function getFablabQuebecJson() {
         foreach ($result as $space) {
 
             $fullname = $space['fulltext'];
+            message('FablabQ :'.$fullname);
 
             $lat =  $space['printouts']['A les coordonnées géographiques'][0]['lat'];
             $lon =  $space['printouts']['A les coordonnées géographiques'][0]['lon'];
@@ -833,17 +581,16 @@ function getFablabQuebecJson() {
 
         };
 
-        // testing
-        // if ($req_page>1) {
-        //     break;
-        // }
-
-        $req_page++;
-        $result = getPageFablabQuebec($req_results,$req_page);
+        if (count($result) == $req_results ) {
+            $req_page++;
+            $result = getPageFablabQuebec($req_results,$req_page);    
+        } else {
+            $result = null;
+        }
     };
 
     if ($req_page !=0) {
-       saveGeoJSON('fablabq.geojson',$array_geo);        
+       saveGeoJSON('fablabq',$array_geo);        
     } else {
         message('No wiki spaces found, nothing written');
     }
@@ -852,7 +599,7 @@ function getFablabQuebecJson() {
 function getPageFablabQuebec($req_results,$req_page) {
     $offset = $req_page*$req_results;
 
-    $url ="https://wiki.fablabs-quebec.org/index.php/Spécial:Requêter/format=json/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/offset=$offset/limit=$req_results/-5B-5BCatégorie:Fab-20Lab-20au-20Québec-5D-5D-20-5B-5BA-20les-20coordonnées-20géographiques::+-5D-5D/-3FA-20les-20coordonnées-20géographiques/-3FA-20l-20adresse-20web//-3F-20Est-20situé-20dans-20la-20localité/-3F-20A-20l-20adresse-20physique/mainlabel=/prettyprint=true/unescape=true";
+    $url = "https://wiki.fablabs.quebec//index.php/Spécial:Requêter/format=json/link=all/headers=show/searchlabel=JSON/class=sortable-20wikitable-20smwtable/offset=$offset/limit=$req_results/-5B-5BCatégorie:Fab-20Lab-20au-20Québec-5D-5D-20-5B-5BA-20les-20coordonnées-20géographiques::+-5D-5D/-3FA-20les-20coordonnées-20géographiques/-3FA-20l-20adresse-20web//-3F-20Est-20situé-20dans-20la-20localité/-3F-20A-20l-20adresse-20physique/mainlabel=/prettyprint=true/unescape=true";
 
     $getWikiJsonResult = getJSON($url);
 
@@ -867,8 +614,12 @@ function getPageFablabQuebec($req_results,$req_page) {
 
 
 function compareDistance() {
-    global $database;
-    $results = $database->select('space',['source','sourcekey','name','lat','lon','lastcurlerror'],['lastcurlerror'=>0,"ORDER" => ['lat','lon'],]);
+	$db = MysqliDb::getInstance();
+
+    $db->where('lastcurlerror',0);
+    $db->orderBy("lat","asc");
+    $db->orderBy("lon","asc");
+    $results = $db->get('mapspace');
 
     message('Found to compare records '.count($results));
 
@@ -891,23 +642,25 @@ function compareDistance() {
         $lon_a = floatval($space['lon']);
         $lat_a = floatval($space['lat']);
 
-        $distance = distance($lat_a,$lon_a,$lat_b,$lon_b,'K')*1000; //KM to meter
+        $distance = round(distance($lat_a,$lon_a,$lat_b,$lon_b,'K')*1000); //KM to meter
         $namelike = similar_text($space_a,$space_b,$namelike_perc);
-
-        message('Compare '.$space_a.' distance  '.(int) $distance,0);
 
         if ($distance <=200 && $namelike_perc>45 && !$runfirst && ($spacesource_a=='W' or $spacesource_b=='W' or $spacesource_a=='Q' or $spacesource_b=='Q')) {
             $found++;
-            message( "within $distance m %=".(int)$namelike_perc.' #='.$namelike,5);
+            message( "within 200m ( $distance m ) %=".(int)$namelike_perc.' #='.$namelike,5);
             message( '  1)'.$space_a.' ['.$spacesource_a.'] key ['.$sourcekey_a.']',5);
             message( '  2)'.$space_b.' ['.$spacesource_b.'] key ['.$sourcekey_b.']',5);
             if ($spacesource_a=='W' or $spacesource_a=='Q') {
-                //set space to not found 
-                $database->update("space",["lastcurlerror" =>1001], ["source"=>$spacesource_a,"sourcekey" => $sourcekey_a]);
-                message('  1 Updated ');
+                $db->where("source",$spacesource_a);
+                $db->where("sourcekey" , $sourcekey_a);
+                $db->update("mapspace",array("lastcurlerror" =>1001));
+                message('  1 removed ');
             } elseif($spacesource_b=='W' or $spacesource_b=='Q') {
-                $database->update("space", ["lastcurlerror" =>1001],["source"=>$spacesource_b,"sourcekey" => $sourcekey_b]);
-                message('  2 Updated ');
+                $db->where("source",$spacesource_b);
+                $db->where("sourcekey" , $sourcekey_b);
+                $db->update("mapspace",array("lastcurlerror" =>1001));
+               
+                message('  2 removed ');
             } else {
                 message('** nothing updated.');
             };
@@ -997,7 +750,7 @@ function saveGeoJSON($file, $array_geo) {
     global $geojson_path;
     $json_geo = json_encode($array_geo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
 
-    $fp = fopen($geojson_path.$file, 'w');
+    $fp = fopen($geojson_path.$file.'.json', 'w');
     fwrite($fp,$json_geo);
     fclose($fp);
 };
@@ -1008,4 +761,192 @@ function cleanUrl($url) {
 }
 
 
+message('End '.date("h:i:sa"),5);
+
+function validateSpaceApi() {
+    echo PHP_EOL . "## Validate Space api json file ". date('Y-m-d H:i').PHP_EOL;
+
+    $dateToOld = strtotime("-3 months");
+    echo 'Date to old : ' . date('Y-m-d H:i', $dateToOld).PHP_EOL;
+
+    $adminMessages = '';
+    $apiStatus = array("ok"=>0,"fail"=>0,"send"=>0);
+
+    //Live
+    $getApiDirResult = getJSON('https://raw.githubusercontent.com/SpaceApi/directory/master/directory.json');
+    $hs_array = $getApiDirResult['json'];
+
+    //Local test
+    // $getApiDirResult['error'] =0;
+    // $hs_array = json_decode(file_get_contents('spaceapilocal.json'),true) ;
+
+    if ($getApiDirResult['error'] != 0) {
+        echo 'Space api dir not found, curl error  ', $getApiDirResult['error'];
+    } else {
+
+        //loop all hackerspaces
+        foreach ($hs_array as $space => $url) {
+
+            // echo "-------------------------" . PHP_EOL;
+            // echo 'Space ' . $space.' url: '.$url.PHP_EOL;
+
+            $emailMessage = '';
+            $email = '';
+
+            if (parse_url($url, PHP_URL_SCHEME) == 'http') {
+                $httpsurl = preg_replace("/^http:/i", "https:", $url);
+                $getApiResult = getJSON($httpsurl);
+
+                if (isset($getApiHTTPResult['json']) and $getApiResult['error'] == 0) {
+                    $emailMessage .= "- Spaceapi via https works, update this in spaceapi directory." . PHP_EOL;
+                    $getApiResult = $getApiResult;
+                } else {
+                    $emailMessage .= "- Spaceapi via https failed, consider enable https." . PHP_EOL;
+                    //fallback to normal json
+                    $getApiResult = getJSON($url, null, 20);
+                };
+
+            } else {
+                $getApiResult = getJSON($url, null, 20);
+            };
+            // Error 0-99 Curl
+            // Error 100-999 http
+            // Error 1000 no valid json
+            // Error 1001 dupe
+            // ssl >2000
+
+            // Explain the error classes
+            if  ($getApiResult['error'] >= 2000) {
+                $emailMessage .= '- SSL error ' . $getApiResult['error'] - 2000 . PHP_EOL;
+            } elseif ($getApiResult['error'] > 1 and $getApiResult['error'] < 100) {
+                $emailMessage .= '- Curl error ' . $getApiResult['error'] . PHP_EOL;
+            } elseif ($getApiResult['error'] >= 100 and $getApiResult['error'] <= 999) {
+                $emailMessage .= '- HTTP error ' . $getApiResult['error'] . PHP_EOL;
+            } elseif ($getApiResult['error'] >= 1000 and $getApiResult['error'] < 2000) {
+                $emailMessage .= '- JSON decode error ' . PHP_EOL;
+            };
+            
+            if (isset($getApiResult['json']) && $getApiResult['error'] == 0) {
+
+                if($getApiResult['cors'] == false) {
+                    $emailMessage .= "- CORS not enabled" . PHP_EOL;
+                };
+
+                $apiJson = $getApiResult['json'];
+
+                if (isset($apiJson['api']) ) {
+                    $api = $apiJson['api'];
+                } elseif (isset($apiJson['api_compatibility'][0])) {
+                    $api = $apiJson['api_compatibility'][0];
+                } else {
+                    $emailMessage .= '- no api version found'.PHP_EOL;
+                };
+
+                if ($api < 0.13) {
+                    $emailMessage .= '- Please upgrade spaceapi to latest version.' . PHP_EOL;
+                    print "API = ".$api;
+                };
+
+                if (isset($apiJson['location']['lon']) && isset($apiJson['location']['lat'])) {
+                    $lon = $apiJson['location']['lon'];
+                    $lat = $apiJson['location']['lat'];
+                } elseif (isset($apiJson['lon']) && isset($apiJson['lat'])) {
+                    //<v12 api
+                    $lon = $apiJson['lon'];
+                    $lat = $apiJson['lat'];
+                };
+
+                if( !isset($apiJson['state']['open']) && !isset($apiJson['open'])) {
+                    print "Geen open Status!!";
+                }
+
+
+                if (
+                    $lon < -180 or $lon > 180 or $lat < -90 or $lat > 90
+                ) {
+                    $emailMessage .= '- Wrong lat\lon is : [ lat ' . number_format($lat,4) . '/ lon ' . number_format($lon,4).PHP_EOL;
+                }
+
+                $lastchange = $apiJson['state']['lastchange'] ?? null; //date in epoch
+
+                if (isset($lastchange)) {
+                    if ($lastchange - $dateToOld < 0) {
+                        $emailMessage .= "- Date lastchange longer then 6 months ago. (". date('Y-m-d H:i', (int)$lastchange) .")". PHP_EOL;
+                    };
+                };
+
+                $email = $apiJson['contact']['email'] ?? '';
+
+                //echo 'email : ' . $email. PHP_EOL;
+
+                if (isset($apiJson['issue_report_channels'][0])){
+                    switch ($apiJson['issue_report_channels'][0]) {
+                        case 'issue_mail':
+                            $email = $apiJson['contact']['issue_mail'];
+                            //if not a valid email assume its base64 encoded
+                            if (filter_var($email, FILTER_VALIDATE_EMAIL) == false) {
+                                $email = base64_decode($email);
+                            };
+                            break;
+                        case 'ml':
+                            $email = $apiJson['contact']['ml']; 
+                            break;
+                        case 'email':
+                            $email = $apiJson['contact']['email'];
+                            break;
+                        case 'twitter':
+                            echo "Issue via Twitter! $space".PHP_EOL;
+                            $email = $apiJson['contact']['twitter'];
+                            break;                            
+                        default: //email
+                            //$email = $apiJson['contact']['email']; 
+                            echo 'Case not found???'.PHP_EOL;
+                            break;
+                    };
+                } elseif(isset($apiJson['contact']['issue_mail'])) {
+                    $email = $apiJson['contact']['issue_mail'];
+                };
+                //echo 'issue email :' . $email . PHP_EOL;
+            };
+            // else {
+            //     $emailMessage .= '- No valid spaceapi json file found.';
+            // };
+
+            if ($emailMessage) {
+                //echo "Send email to : " . $email . PHP_EOL;
+                //echo "Message :" . PHP_EOL . $emailMessage . PHP_EOL;
+
+                echo "-------------------------" . PHP_EOL;
+                echo 'Space ' . $space . ' url: ' . $url . PHP_EOL;
+
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    //$email = 'spaceapi@mapall.space';
+                    $headers = 'From: spaceapi@mapall.space' . "\r\n" .
+                        'Reply-To: spaceapi@mapall.space' . "\r\n";
+                    $emailMessage =
+                        "Dear Maker/Hacker,\r\n\r\nWe (volunteers of spaceapi.io) found some issues with your spaceapi url/json on $url. " .
+                    "\r\n\r\nWe found the following issues : " . PHP_EOL .
+                        $emailMessage . PHP_EOL .
+                    "Please fix this issues so that other sites can enjoy your live data. To check your spaceapi manual you can use the online validator ( https://spaceapi.io/validator/ ).\r\n\r\nRegards,\r\n\r\nDave";
+                    if (mail($email, "Your $space spaceapi", $emailMessage,$headers)) {
+                        $apiStatus['send']++;
+                    } else {
+                        $apiStatus['fail']++;
+                        echo "Sending mail to $space failed!".PHP_EOL;
+                        echo "Found errors : $emailMessage" . PHP_EOL;
+                    }
+                } else {
+                    $adminMessages .= $space. " Email: " . $email . PHP_EOL . $emailMessage . PHP_EOL . '******' . PHP_EOL;
+                    echo "ERROR Sendmail : Email $email not valid for $space".PHP_EOL;
+                    echo "Found errors : $emailMessage".PHP_EOL;
+                    $apiStatus['fail']++;
+                };
+            } else {
+                $apiStatus['ok']++;
+            };
+        };
+        echo '****************' . PHP_EOL . $adminMessages;
+    };
+    echo "Checked ".$apiStatus['ok']." Failed ". $apiStatus['fail']." Send : ". $apiStatus['send'].PHP_EOL;
+};
 

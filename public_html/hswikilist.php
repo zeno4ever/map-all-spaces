@@ -22,19 +22,7 @@ if (isset($_COOKIE['wikipw']) && $_COOKIE['wikipw'] == substr(sha1($wikiPasswd),
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<!-- Set the page to the width of the device and set the zoon level -->
 	<meta name="viewport" content="width = device-width, initial-scale = 1">
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-2M9QVB70G3"></script>
-	<script>
-		window.dataLayer = window.dataLayer || [];
-
-		function gtag() {
-			dataLayer.push(arguments);
-		}
-		gtag('js', new Date());
-
-		gtag('config', 'G-2M9QVB70G3');
-	</script>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
 	<script type="text/javascript">
 		function wikiupdate(hackerspace, action) {
 			$.post("wikiupdate.php", {
@@ -83,13 +71,11 @@ if (isset($_COOKIE['wikipw']) && $_COOKIE['wikipw'] == substr(sha1($wikiPasswd),
 			Below you will find a list of all of the hackerspace entities that have to be manually checked. If you want to help - pick an entry and figure out whether the hackerspace is still open or not (social media, website, etc). If it still active, add (hidden) text to the wiki like: '&lt!-- set to $status for $reason, Checked by person $yourname on $date --&gt' or set the status to 'closed' or 'suspected inactive'. To do this you'll need to create a Hackerspaces.org wiki log in and then you can edit any pages.
 			<?php
 
-			//$result = $database->select("wikispace", '*' ,["status" => 'manual']);
-			$result = $database->query("SELECT DISTINCT name,wikiurl FROM wikispace WHERE status = 'manual' ORDER BY wikiurl;")->fetchAll();
-
-			shuffle($result);
+			$result = $db->rawQuery("SELECT DISTINCT name,wikiurl FROM wikispace WHERE status = 'manual' ORDER BY wikiurl;");
 
 			echo '<h4>Right now there are ' . count($result) . ' hackerspaces to be check manualy.</h4>';
 			if ($result) {
+				shuffle($result);
 				echo '<table class="wiki"><tr><th colspan="4">Hackerspace Name</th></tr>';
 				foreach ($result as $space) {
 					echo '<tr>';
