@@ -2,6 +2,11 @@
 <?php 
 require('colors.inc.php'); 
 include '../../private/init.php'; 
+
+$color[0] = '#ff6060'; //dicht = rood
+$color[1] = '#60ff60'; //open = groen
+$color[3] = '#999999'; //niet meer actief	
+
 ?>
 <html>
 
@@ -25,27 +30,25 @@ include '../../private/init.php';
 			</p>
 
 			<p>Data quality: <?php
-								//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
-
-								$sql = 'select sum(get_ok) * 100 / sum(get_total) as q, sum(lns) * 100 / count(*) as openp from spaces';
-								if (!$result = $mysqli->query($sql)) {
-									echo "Sorry, the website is experiencing problems.<br>";
-									echo "Errno: " . $mysqli->errno . "<br>\n";
-									echo "Error: " . $mysqli->error . "<br>\n";
-									exit;
+								$sql = 'select sum(get_ok) * 100 / sum(get_total) as q, sum(lns) * 100 / count(*) as openp from heatmspaces';
+								$result = $db->rawQuery ($sql);
+								if ($db->getLastErrno() !== 0) {
+									echo "Error: ". $db->getLastError();
 								}
-
-								$row = $result->fetch_assoc();
-								print sprintf('%.2f%%', $row['q']);
+								print sprintf('%.2f%%', $result[0]['q']);
 								?> (100% is all space-api calls succeeded)</p>
-			<p>Percentage of the spaces that are open: <?php print sprintf('%.2f%%', $row['openp']); ?></p>
+			<p>Percentage of the spaces that are open: <?php print sprintf('%.2f%%', $result[0]['openp']); ?></p>
 			<p>Click on a hackerspace name to open the heatmap-view.</p>
 
-			<p><?php $sql = "SELECT distinct lower(substr(name, 1, 1)) as l FROM spaces ORDER BY name";
-				$result = $mysqli->query($sql);
+			<p><?php 
+				$sql = "SELECT distinct lower(substr(name, 1, 1)) as l FROM heatmspaces ORDER BY l";
+				$result = $db->rawQuery ($sql);
+				if ($db->getLastErrno() !== 0) {
+					echo "Error: ". $db->getLastError();
+				}
 				$col = 1;
-				while ($letters = $result->fetch_assoc()) {
-				?><a href="#<?php print $letters['l']; ?>" <?php
+				foreach ($result as $letters ) {
+					?><a href="#<?php print $letters['l']; ?>" <?php
 														if ($col) {
 														?>style="background-color: #606060;" <?php
 																							} else {
@@ -57,19 +60,18 @@ include '../../private/init.php';
 																																											?></p>
 
 			<?php
-			$sql = "SELECT `key`, name, logo, lns FROM spaces ORDER BY name";
-			if (!$result = $mysqli->query($sql)) {
-				echo "Sorry, the website is experiencing problems.<br>";
-				echo "Errno: " . $mysqli->errno . "<br>\n";
-				echo "Error: " . $mysqli->error . "<br>\n";
-				exit;
+			$sql = "SELECT `key`, name, logo, lns, lastupdated FROM heatmspaces ORDER BY name";
+			$result = $db->rawQuery ($sql);
+			if ($db->getLastErrno() !== 0) {
+				echo "Error: ". $db->getLastError();
 			}
 
 			$p = 'a';
 			print '<p>';
 
-			while ($space = $result->fetch_assoc()) {
-				$name = $space['name'];
+			// while ($space = $result->fetch_assoc()) {
+			foreach ($result as $space ) {
+					$name = $space['name'];
 				$first = strtolower(substr($name, 0, 1));
 				if ($first != $p) {
 					$p = $first;
@@ -78,15 +80,17 @@ include '../../private/init.php';
 
 				$lns = $space['lns'];
 
-				if ($lns) {
-			?><a href="show.php?id=<?php print urlencode($space['name']); ?>" style="background-color: #60ff60;"><?php print $name; ?></a> <?
-																																	} else {
-																																		?><a href="show.php?id=<?php print urlencode($space['name']); ?>" style="background-color: #ff6060;"><?php print $name; ?></a> <?
-																																																																}
-																																																															}
-																																																																	?>
+				//meer dan 6 maanden geen update/wijziging open status
+				if (isset($space['lastupdated']) && strtotime($space['lastupdated']) < strtotime("-6 Month") ) {
+					$lns = 3; 
+				};
+
+
+			?><a href="show.php?id=<?php print urlencode($space['name']); ?>" style="background-color: <?php print $color[$lns] ?>;"><?php print $name; ?></a> 
+			<?php } ?>
 			</p>
 		</div>
+		Color meanings : <span style="background-color: <?php print $color[1] ?>" > Now open </span>&nbsp;<span style="background-color: <?php print $color[0] ?>" >  Closed  </span>&nbsp;<span style="background-color: <?php print $color[3] ?>" > Inactive (longer 6 months) </span>
 		<br>
 		<p>See <a href="open.php">this</a> page to see a global open/closed percentage for all spaces.</p>
 		<br>

@@ -1,43 +1,46 @@
 <!DOCTYPE html>
-<? require('colors.inc.php'); ?>
-<? include '../../private/init.php'; ?>
+<?php
+ require('colors.inc.php');
+include '../../private/init.php';
+?>
 <html>
 
 <HEAD>
-
 	<LINK HREF="sakura.css" REL="stylesheet" TYPE="text/css">
 	<LINK HREF="index.css" REL="stylesheet" TYPE="text/css">
+	<link rel="stylesheet" type="text/css" href="/css/style.css">
 </HEAD>
 
 <body>
+	<div id="header">
+		<?php include $PRIVATE . '/layout/navigate.php' ?>
+	</div>
+
 	<div>
 		<h1>SpaceAPI</h1>
 		<div class="container">
 			<?php
-			//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
 
-			$sql = "SELECT `key`, name, url FROM spaces ORDER BY name";
-			if (!$result = $mysqli->query($sql)) {
-				echo "Sorry, the website is experiencing problems.<br>";
-				echo "Errno: " . $mysqli->errno . "<br>\n";
-				echo "Error: " . $mysqli->error . "<br>\n";
+			$sql = "SELECT `key`, name, url FROM heatmspaces ORDER BY name";
+			$result = $db->rawQuery ( $sql);
+			if ($db->getLastErrno() !== 0) {
+				echo "Error  $space. Error: ". $db->getLastError().'  '.__LINE__;
 				exit;
 			}
 
 			$n = 0;
-			while ($space = $result->fetch_assoc()) {
+			foreach ($result as  $space ) {
 				$key = $space['key'];
 				$name = $space['name'];
 				$url = $space['url'];
 
 				$sql2 = 'SELECT sum(open)/count(*) * 100 as open from data_' . $key;
-				if (!$result2 = $mysqli->query($sql2)) {
-					echo "Sorry, the website is experiencing problems.<br>";
-					echo "Errno: " . $mysqli->errno . "<br>\n";
-					echo "Error: " . $mysqli->error . "<br>\n";
+				$result2 = $db->rawQuery ( $sql2);
+				if ($db->getLastErrno() !== 0) {
+					echo "Error  $space. Error: ". $db->getLastError().'  '.__LINE__;
 					exit;
 				}
-				$row2 = $result2->fetch_assoc();
+				$row2 = $result2[0];
 
 				$data[] = [$name, $row2['open']];
 
@@ -50,6 +53,7 @@
 			}
 
 			usort($data, 'sortByOrder');
+
 			?>
 			<table>
 				<tr>
@@ -62,8 +66,8 @@
 						continue;
 
 				?><tr>
-						<td><?php print $data[$i][0]; ?></td>
-						<td><?php print sprintf('%.2f', $data[$i][1]); ?>%</td>
+						<td style="text-align:left"><a href="/heatmap/show.php?id=<?php print urlencode($data[$i][0]).'">'.$data[$i][0]; ?></a></td>
+						<td style="text-align:right"><?php print sprintf('%.2f', $data[$i][1]); ?>%</td>
 					</tr><?php
 						}
 							?>

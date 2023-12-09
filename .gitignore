@@ -3,6 +3,10 @@
 *.sublime-project
 # VS code workspace
 *.code-workspace
+/vscode/*
+
+#mac os 
+.DS_Store
 
 
 # Composer components
@@ -11,6 +15,7 @@
 #data files for this project
 database.db
 *.geojson
+/public_html/*.json
 settings.php
 test.php
 errorlog.txt
@@ -18,9 +23,10 @@ wikilog.txt
 cookie.txt
 private/init.php
 privatecookie.txt
-private/spaceapilocal.json
 
 # local ssl for testing
 ssl cert/*
 *.crt
 *.key
+
+.vscode/

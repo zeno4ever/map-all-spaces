@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <?php 
-//	include '../../private/init.php'; 
+	include '../../private/init.php'; 
 ?>
 <HTML>
 <HEAD>
@@ -10,217 +10,211 @@
 	<div id="header">
 		<?php include $PRIVATE . '/layout/navigate.php' ?>
 	</div>
-
 	<?php
-
-	// $databaseHost = 'localhost:8889';
-	// $databaseUser = 'user';
-	// $databasePassword = '4amiga';
-	// $databaseName = 'mapall';
-
-
-
-
-	//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
-
-	//$mysqli = new mysqli($databaseHost, $databaseUser, $databasePassword, $databaseName);
-
 	$id = md5($_GET['id']);
 	$table = 'data_' . $id;
 
-	$sql = "SELECT sa, url, name, sum(get_ok) * 100 / sum(get_total) as q, timezone, timezone_long FROM spaces WHERE `key`='$id'";
+	$sql = "SELECT sa, url, name, get_ok * 100 / get_total as q, timezone, timezone_long FROM heatmspaces WHERE `key`='$id'";
 
-	echo $sql;
-	exit;
-	$result = $mysqli->query($sql);
-
-	if ($mysqli->connect_errno) {
-		echo "Failed to connect to MySQL: " . $mysqli->connect_error;
-		exit();
+	$result = $db->rawQuery ($sql);
+	if ($db->getLastErrno() !== 0) {
+		echo "Error: ". $db->getLastError();
 	}
+	$row = $result[0];
+	$j = json_decode($row['sa'], TRUE);	
 
-	// $row = $result->fetch_assoc();
-	// $j = json_decode($row['sa'], TRUE);
-
-	
 	//Timezone calculations
 	$their_tz = $row['timezone'];
 
-	if ($their_tz == null or $their_tz == '')
+	if ($their_tz == null or $their_tz == '') {
 		$their_tz = 'Europe/Amsterdam';
+	}
+
+	$country ='';
+	if (isset($row['timezone_long'])) {
+		$tz_j = json_decode($row['timezone_long'], TRUE);
+		$country = $tz_j['countryName'];	
+	}; 
 
 	$time = new \DateTime('now', new DateTimeZone($their_tz));
 	$timezoneOffset = $time->format('P');
 
-	$tz_j = json_decode($row['timezone_long'], TRUE);
-	$country = $tz_j['countryName'];
-
-	?><h1><?php if ($j['space'] == '') print $row['name'];
-			else print $j['space']; ?></h1><p>
+	?>
+	<h1>
+	<?php print $j['space']??$row['name']; ?>
+	</h1><p>
 	<ul>
-		<li><a href="<?php print $j['url']; ?>"><? print $j['url']; ?></a><br>
-		<li><?php print $j['location']['address']; ?> (<? print $country; ?>)<br>
-		<li><a href="/index.php?menu=home&lat=<? print $j['location']['lat']; ?>&lon=<? print $j['location']['lon']; ?>" target="_blank">latitude: <? print $j['location']['lat']; ?> / longitude: <? print $j['location']['lon']; ?></a><br>
+		<?php	 if (isset($j)) { ?>
+			<li><a href="<?php print $j['url']; ?>"><?php print $j['url']; ?></a><br>
+			<li><?php print $j['location']['address']; ?> (<?php print $country; ?>)<br>
+			<li><a href="/index.php?menu=home&lat=<?php print $j['location']['lat']; ?>&lon=<?php print $j['location']['lon']; ?>" target="_blank">latitude: <?php print $j['location']['lat']; ?> / longitude: <?php print $j['location']['lon']; ?></a><br>
+		<?php }	?>
 		<li>timezone: <?php print $their_tz; ?>
 		<?php
 		//debugging timezone
-		if ($_GET['debug']) {
+		if ( array_key_exists( 'debug', $_GET)) {
 			echo '<div id="debug"><p>';
 			echo '<p>Timezone offset=' . $timezoneOffset.'<p>';
 
 			$sql = 'SELECT DATE(ts) as datum, TIME(ts) as tijd, CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tztijd, open FROM ' . $table . ' WHERE ts >=  DATE_SUB(NOW(),INTERVAL 1 MONTH) ORDER BY ts';
-			$result = $mysqli->query($sql);
+			// $result = $mysqli->query($sql);
+
+
+			$result = $db->rawQuery ( $sql);
+			if ($db->getLastErrno() !== 0) {
+				echo "Error  ". $db->getLastError().'  '.__LINE__;
+			}
 
 			$lastrow=null;
-			while ($row = $result->fetch_array(MYSQLI_ASSOC)) {
-				if ($lastrow['open'] !== $row['open']) {
+			foreach ($result as $row ) {
+					if ($lastrow['open'] !== $row['open']) {
 					echo $row['datum'] . ' ' . $row['tijd'] . ' TZ -' . $row['tztijd'] . ' ' . $row['open'] . '<p>';
 				};
 				$lastrow = $row;
 			}
 			echo 'Last entry : '. $lastrow['datum'] . ' ' . $lastrow['tijd'] . ' TZ -' . $lastrow['tztijd'] . ' ' . $lastrow['open'] . '<p>';
-			$result->free_result();
 			echo '</div>';
 		}
 		?> 
 	</ul>
-	<?
-	if ($j['state']['open'] == 'true' || $j['open'] == 'true') {
-		$s = "open";
-		$icon = $j['state']['icon']['open'];
-	} else {
-		$s = "closed";
-		$icon = $j['state']['icon']['closed'];
+	<?php
+	$icon = $j['logo']??'';
+	$s='';
+	if (isset($j)) {
+		if ((isset($j['state']['open']) && $j['state']['open'] == 'true') || (isset($j['open']) && $j['open'] == 'true')) {
+			$s = "open";
+			$icon = $j['state']['icon']['open']??'';
+		} else {
+			$s = "closed";
+			$icon = $j['state']['icon']['closed']??'';
+		}
 	}
+	?><img border=1 src="<?php print $icon; ?>" width=64> &nbsp; <?php
+	print "state: ".$s;
+	$lastchange = 0;
+	if (isset($j)) {
+		if (isset($j['state']['lastchange']))
+			$lastchange = $j['state']['lastchange'];
+		else if (isset($j['lastchange']))
+			$lastchange = $j['lastchange'];
+	}
+	if ($lastchange != 0) {
+		?>
+		<p>Last state change: <?php print date('F d Y H:i:s', (int)$lastchange); ?></p><?php
+	} ?>
 
-	if ($icon != '') {
-	?><img border=1 src="<? print $icon; ?>" width=64> &nbsp; <?
-															} else {
-																$logo = $j['logo'];
-																?><img border=1 src="<? print $logo; ?>" width=64> &nbsp; <?
-																														}
+	<p>Data quality: <?php print sprintf('%.2f%%', $row['q']); ?> (100% is all space-api calls succeeded)</p>
 
-																														print "state: $s";
-
-																														$lastchange = 0;
-																														if ($j['state']['lastchange'] != '')
-																															$lastchange = $j['state']['lastchange'];
-																														else if ($j['lastchange'] != '')
-																															$lastchange = $j['lastchange'];
-
-																														if ($lastchange != 0) {
-																															?>
-		<p>Last state change: <? print date('F d Y H:i:s', $lastchange); ?></p><?
-																														} ?>
-
-	<p>Data quality: <? print sprintf('%.2f%%', $row['q']); ?> (100% is all space-api calls succeeded)</p>
-
-	<?
+	<?php
 	flush();
 
 	$sql = "SELECT sum(open) * 100 / count(*) as openp FROM $table";
-	$result = $mysqli->query($sql);
-	$row = $result->fetch_assoc();
+	// $result = $mysqli->query($sql);
+
+	$result = $db->rawQuery ( $sql);
+	if ($db->getLastErrno() !== 0) {
+		echo "Error  ". $db->getLastError().'  '.__LINE__;
+	}
+	$row = $result[0];
+	// $row = $result->fetch_assoc();
 	?>
-	<p>Percentage open: <? print sprintf('%.2f%%', $row['openp']); ?></p>
+	<p>Percentage open: <?php print sprintf('%.2f%%', $row['openp']); ?></p>
+	<?php require('colors.inc.php'); ?>
+	<H2>last week (7 days) </H2><?php
+		doit('SELECT DAYOFWEEK(tts) as dayofweek, HOUR(tts) as hour, SUM(open) / COUNT(*) AS open FROM (SELECT CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tts, open FROM ' . $table . ') AS i WHERE tts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) GROUP BY dayofweek, hour');
+		?><A NAME="maand"></A>
+	<H2>last month (31 days)</H2><?php
+		doit('SELECT DAYOFWEEK(tts) as dayofweek, HOUR(tts) as hour, SUM(open) / COUNT(*) AS open FROM (SELECT CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tts, open FROM ' . $table . ') AS i WHERE tts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 31 DAY) GROUP BY dayofweek, hour');
+		?><A NAME="jaar"></A>
+	<H2>this year (356 days)</H2><?php
+		doit('SELECT DAYOFWEEK(tts) as dayofweek, HOUR(tts) as hour, SUM(open) / COUNT(*) AS open FROM (SELECT CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tts, open FROM ' . $table . ') AS i WHERE tts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 365 DAY) GROUP BY dayofweek, hour');
+		?><A NAME="alles"></A>
+	<H2>everything</H2><?php
+		doit('SELECT DAYOFWEEK(tts) as dayofweek, HOUR(tts) as hour, SUM(open) / COUNT(*) AS open FROM (SELECT CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tts, open FROM ' . $table . ') AS i GROUP BY dayofweek, hour');
+	
+	function doit($query)
+	{
+		$db = MysqliDb::getInstance();		
 
-	<? require('colors.inc.php'); ?>
+		for ($i = 0; $i < 24; $i++)
+			$avgs[$i] = $avgsn[$i] = 0;
+		
+		$results = $db->rawQuery ( $query);
+        if ($db->getLastErrno() !== 0) {
+            echo "Error: ". $db->getLastError().'  '.__LINE__;
+			exit;
+        };
 
-	<H2>last week </H2><?
-						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 WEEK) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
+		foreach ($results as $row ) {
+			$h = $row['hour'];
 
-						?><A NAME="maand"></A>
-	<H2>last month </H2><?
-						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS 	ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 MONTH) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
+			$counts[$row['dayofweek']][$h] = $row['open'];
 
-						?><A NAME="jaar"></A>
-	<H2>this year </H2><?
-						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS ts, sum(open) / count(*) as factor from ' . $table . ' WHERE ts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 YEAR) group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
+			$avgs[$h] += $row['open'];
+			$avgsn[$h]++;
+		}
 
-						?><A NAME="alles"></A>
-	<H2>everything</H2><?
-						doit('SELECT DAYNAME(ts) AS dayofweek, HOUR(ts) AS hour, avg(factor) as open FROM (select CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS ts, sum(open) / count(*) as factor from ' . $table . ' group by date(ts), hour(ts)) as der GROUP BY dayofweek, hour ORDER BY WEEKDAY(ts)');
+		for ($i = 0; $i < 24; $i++) {
+			$h = $i;
+			if ($avgsn[$i] != 0) {
+				$counts['avg'][$h] = $avgs[$i] / $avgsn[$i];
+			} else {
+				$counts['avg'][$h] = 0;
+			}
+		}
 
-						function doit($query)
-						{
-							#print "$query<br>\n";
-							global $mysqli;
+		foreach ($counts as $d => $v) {
+			$t = 0;
+			for ($i = 0; $i < 24; $i++) {
+				if (!array_key_exists($i, $counts[$d])) {
+					$counts[$d][$i] = 0;
+				}
+				$t += $counts[$d][$i];
+			}
+			$counts[$d][24] = $t / 24;
+		}
 
-							for ($i = 0; $i < 24; $i++)
-								$avgs[$i] = $avgsn[$i] = 0;
+	?><TABLE class="heatmap"><?php
+		print "\n";
+	?><TR><TH></TH><?php
+		for ($h = 0; $h < 24; $h++) {
+		?><TH><?php printf('%02d', $h); ?></TH><?php
+			}
+		?><TH>avg</TH><?php
 
-							$results = $mysqli->query($query);
+			$rood = rgbToHsl(255, 40, 40);
+			$groen = rgbToHsl(40, 255, 40);
 
-							while ($row = $results->fetch_assoc()) {
-								$h = $row['hour'];
+			foreach ($counts as $d => $v) {
+			?>
+	</TR>
+	<TH><?php print $d; ?></TH><?php
+	for ($h = 0; $h < 25; $h++) {
+		$c = $counts[$d][$h];
 
-								$counts[$row['dayofweek']][$h] = $row['open'];
+		$H = ($groen[0] - $rood[0]) * $c + $rood[0];
+		$L = ($groen[1] - $rood[1]) * $c + $rood[1];
+		$S = ($groen[2] - $rood[2]) * $c + $rood[2];
 
-								$avgs[$h] += $row['open'];
-								$avgsn[$h]++;
-							}
+		$rgb = hslToRgb($H, $L, $S);
 
-							for ($i = 0; $i < 24; $i++) {
-								$h = $i;
-								if ($avgsn[$i] != 0) {
-									$counts['avg'][$h] = $avgs[$i] / $avgsn[$i];
-								} else {
-									$counts['avg'][$h] = 0;
-								}
-							}
-
-							foreach ($counts as $d => $v) {
-								$t = 0;
-								for ($i = 0; $i < 24; $i++)
-									$t += $counts[$d][$i];
-								$counts[$d][24] = $t / 24;
-							}
-
-						?><TABLE class="heatmap"><?
-													print "\n";
-													?><TR>
-				<TH></TH><?
-							for ($h = 0; $h < 24; $h++) {
-							?><TH><? printf('%02d', $h); ?></TH><?
-															}
-																?><TH>avg</TH><?
-
-																				$rood = rgbToHsl(255, 40, 40);
-																				$groen = rgbToHsl(40, 255, 40);
-
-																				foreach ($counts as $d => $v) {
-																				?>
-			</TR>
-			<TH><? print $d; ?></TH><?
-
-																					for ($h = 0; $h < 25; $h++) {
-																						$c = $counts[$d][$h];
-
-																						$H = ($groen[0] - $rood[0]) * $c + $rood[0];
-																						$L = ($groen[1] - $rood[1]) * $c + $rood[1];
-																						$S = ($groen[2] - $rood[2]) * $c + $rood[2];
-
-																						$rgb = hslToRgb($H, $L, $S);
-
-																						$r = $rgb[0];
-																						$g = $rgb[1];
-																						$b = $rgb[2];
-
-									?><TD WIDTH=30 BGCOLOR="#<? printf('%02x%02x%02x', $r, $g, $b); ?>"><? printf('%.0f', $c * 100.0); ?></TD><?
-																																			}
-
-																																				?></TR><?
-																																					}
-																																						?>
-		</TABLE><?
-
-							flush();
-						}
-				?>
+		$r = $rgb[0];
+		$g = $rgb[1];
+		$b = $rgb[2];
+	?><TD WIDTH=30 BGCOLOR="#<?php printf('%02x%02x%02x', $r, $g, $b); ?>"><?php printf('%.0f', $c * 100.0); ?></TD><?php
+	}
+	?></TR><?php
+		}
+			?>
+	</TABLE>
+	<?php
+				flush();
+			}
+	?>
 
 	<br>
 	<br>
-	<p><a href="json.php?id=<? print urlencode($_GET['id']); ?>"><img src="opendata-logo.jpg" width=128></a></p>
+	<p><a href="json.php?id=<?php print urlencode($_GET['id']); ?>"><img src="opendata-logo.jpg" width=128></a></p>
 	<br>
 	<br>
 

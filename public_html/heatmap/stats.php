@@ -13,8 +13,7 @@
 		<h1>SpaceAPI statistics</h1>
 
 		<?
-		//$mysqli = new mysqli('localhost', 'spaceapi', 'spaceapi', 'spaceapi');
-		$sql = 'SELECT name, `key`, sa FROM spaces ORDER BY name';
+		$sql = 'SELECT name, `key`, sa FROM heatmspaces ORDER BY name';
 		$result = $mysqli->query($sql);
 		?>
 
