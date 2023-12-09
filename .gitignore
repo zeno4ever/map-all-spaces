@@ -28,3 +28,5 @@ privatecookie.txt
 ssl cert/*
 *.crt
 *.key
+
+.vscode/
