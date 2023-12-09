@@ -133,10 +133,10 @@
                         openstatus = data.open == true;
                         lastchange = data.lastchange;
                     } else {
-                        openstatus = data.state.open == true;
-                        lastchange = data.state.lastchange;
+                        openstatus = data.state?.open == true;
+                        lastchange = data.state?.lastchange;
 
-                        if (data.state.icon != null) {
+                        if (data.state?.icon != null) {
                             iconopen = String(data['state']['icon']['open']);
                             iconclosed = String(data['state']['icon']['closed']);
                         };
