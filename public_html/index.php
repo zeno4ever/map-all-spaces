@@ -15,10 +15,12 @@
     <meta name="viewport" content="width = device-width, initial-scale = 1">
 
     <!-- jquery -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <!-- Leaflet v1.0.1 -->
-    <link rel="stylesheet" href="//unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <script src="//unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+
+    <!-- Leaflet v1.9.4 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <!--script src="leaflet.featuregroup.subgroup.js"></script-->
     <script src="https://unpkg.com/leaflet.featuregroup.subgroup@1.0.2/dist/leaflet.featuregroup.subgroup.js"></script>
 
@@ -37,19 +39,6 @@
     <link rel="stylesheet" href="/css/leaflet-search.css" />
     <script src="/dist/leaflet-search.js"></script>
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2M9QVB70G3"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-
-        function gtag() {
-            dataLayer.push(arguments);
-        }
-        gtag('js', new Date());
-
-        gtag('config', 'G-2M9QVB70G3');
-    </script>
-
 </head>
 
 <body>
@@ -60,6 +49,7 @@
         <div id="map"></div>
     </div>
     <script>
+        $( document ).ready(function() {
         //const queryString = window.location.search;
         const urlParams = new URLSearchParams(window.location.search);
 
@@ -105,19 +95,19 @@
         };
 
         var masClusGroup = new L.markerClusterGroup({
-            disableClusteringAtZoom: 7,
+            disableClusteringAtZoom: 7, //good default 7, to disable 1 
             chunkedLoading: true
         }).addTo(map);
 
         var layerSpaceApi = L.featureGroup.subGroup(masClusGroup).addTo(map);
-        loadGeoJSON('/api.geojson', layerSpaceApi, 'api');
+        loadGeoJSON('/api.json', layerSpaceApi, 'api');
 
         var layerSpaceFablab = L.featureGroup.subGroup(masClusGroup).addTo(map);
-        loadGeoJSON('/fablab.geojson', layerSpaceFablab, 'fablab');
-        loadGeoJSON('/fablabq.geojson', layerSpaceFablab, 'fablab');
+        loadGeoJSON('/fablab.json', layerSpaceFablab, 'fablab');
+        loadGeoJSON('/fablabq.json', layerSpaceFablab, 'fablab');
 
         var layerSpaceWiki = L.featureGroup.subGroup(masClusGroup).addTo(map);
-        loadGeoJSON('/wiki.geojson', layerSpaceWiki, '');
+        loadGeoJSON('/wiki.json', layerSpaceWiki, '');
 
         var overLayMap = {
             "Hackerspace (SpaceAPI)": layerSpaceApi,
@@ -152,10 +142,14 @@
             .addTo(map);
 
 
-        $(document).ajaxComplete(function(event, xhr, settings) {
-            map.spin(false);
-        });
+            // $(document).ajaxComplete(function(event, xhr, settings) {
+                map.spin(false);
+            // });
 
+ 
+ 
+        });
+ 
         //Callback geolocation
         function getPos(geoPos) {
             map.setView([geoPos.coords.latitude, geoPos.coords.longitude], 4)

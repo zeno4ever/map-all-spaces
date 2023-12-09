@@ -1,1 +1,0 @@
-select * from spaces where key=md5('TkkrLab')

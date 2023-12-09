@@ -6,19 +6,6 @@ See also : 	https://wiki.hackerspaces.org/Hackerspace_Census_2019
 
 require 'init.php';
 
-//database
-use Medoo\Medoo;
-
-if (isset($databasefile)) {
-	$database = new Medoo([
-	    'database_type' => 'sqlite',
-	    'database_file' => $databasefile
-	]);
-} else {	
-	echo 'Set $databasefile in settings.php';
-	exit;
-};
-
 $wikiApi  = "https://wiki.hackerspaces.org/w/api.php";
 $log_path = './';
 $loglevel=0;
@@ -35,10 +22,7 @@ if (php_sapi_name()=='cli') {
 	};
 
 	if (isset($cliOptions['init'])) {
-	    $database->delete('wikispace',Medoo::Raw('WHERE true'));
-	    // if(!file_exists ( $geojson_path.'errorlog.txt' )) {
-	    //     unlink($geojson_path.'errorlog.txt');
-	    // }
+	    $db->delete('wikispace');
 	    echo('Init : database empty and logfile removed');
 	};
 
@@ -60,22 +44,8 @@ if (php_sapi_name()=='cli') {
 	} else {
 		$maxcount=0;
 	};
-	message('Maxcount = '.$maxcount);
-
-	//$url = 'http://otelolinz.at/';
-	//$result = getCurl($url);
-	//echo getDateSiteAlternativeLink($result['result'],$url);
-	//echo getDateNewsFeed('https://www.hswro.org/?feed=rss2');
-	//echo getDateNewsFeed('http://infuanfu.de//feed.xml');
-
-	//echo (getDateLastWikiEdit('http://muc.ccc.de/'));
-
-	//$count = $database->get("wikispace","curlerrorcount", ["wikiurl" =>$wikiurl]);
-	//exit;
 	
-	//twitter API
-	$twitter = new TwitterAPIExchange($twitterSettings);
-
+	message('Maxcount = '.$maxcount);
 
 	// ** Login wiki **//
 	$login_Token = getLoginToken();
@@ -107,11 +77,11 @@ if (php_sapi_name()=='cli') {
 function updateOneHackerSpace($space,$action) {
 	global $wikiApi,$login_Token,$csrf_Token,$wikiMessage;
 
-	$wikiMessage .= "Updated manual via http://mapall.space/hswikilist.php\n ";
+	$date = date("h:i:sa");
+	$wikiMessage .= "Updated manual on $date via http://mapall.space/hswikilist.php\n ";
 
 	if (empty($login_Token)) {
 		$login_Token = getLoginToken();
-		//message('Login token ='.$login_Token);
 		loginRequest( $login_Token );
 		$csrf_Token = getCSRFToken();
 	}
@@ -150,13 +120,13 @@ function updateOneHackerSpace($space,$action) {
 
 
 function getHackerspacesOrgJson() {
-    global $database, $removeOlderThen, $testrun, $maxcount, $wikiMessage;
+    global $removeOlderThen, $testrun, $maxcount, $wikiMessage;
 
     $req_results = 50;
     $req_page = 0;
     $now = date_create(date('Y-m-d\TH:i:s'));
             
-    $statistics = [];
+    $statistics = array('total'=>0,'down'=>0,'manual'=>0,'active'=>0,'inactive'=>0,'skipped'=>0);
 
     message('#### Check hackerspaces on '.date('Y-m-d H:i').' ####');
 
@@ -165,8 +135,6 @@ function getHackerspacesOrgJson() {
     while (isset($result) && count($result)==50) {
 
         foreach ($result as $space) {
-
-        	//$statistics['total']+=1;
 			$wikiMessage = '';
 
             $fullname = $space['fulltext'];
@@ -178,25 +146,23 @@ function getHackerspacesOrgJson() {
             echo '.......... '.PHP_EOL;
             message('** Space '.$fullname.' Last modified on wiki '.$lastupdate->format('Y-m-d').' - days '.$interval.' ago **  '.$source,4);
 
-            $url = (isset($space['printouts']['Website'][0])) ? $space['printouts']['Website'][0] : null;
+            // $url = (isset($space['printouts']['Website'][0])) ?? $space['printouts']['Website'][0] : null;
+            $url = $space['printouts']['Website'][0] ?? null;
 
             message('Url = '.$url);
-            //check if fullname and url match
 
             //only check if no modification in last year
-            if ($interval > 356 ) {
+            if ($interval > 356 ) { 
             	$statistics['total']+=1;
 
 				$email =  $space['printouts']['Email'][0]  ?? '';
-				$email .= (' , ' . $space['printouts']['Residencies Contact'][0]) ?? '';
-				$email = str_replace('mailto:', '' ,$email);
 
 				if (isset($space['printouts']['Residencies Contact'][0])) {
 					$email .= $space['printouts']['Residencies Contact'][0] ??'';
-					$email = $email.','. $space['printouts']['Residencies Contact'][0];
-
 					echo 'Found Residencies mail '. $space['printouts']['Residencies Contact'][0];
 				};
+				$email = str_replace('mailto:', '' ,$email);
+
 
 				$siteUp = getCurl($url,null,60); //wait long time for responce 
 
@@ -213,7 +179,7 @@ function getHackerspacesOrgJson() {
 						$namefound = substr_count(strtoupper($siteUp['result']),str_replace('_',' ',strtoupper($fullname)));
 						message('Found name on homepage '.$namefound.' times.',0);
 
-						if ($namefound>0) {
+						if ($namefound>0 && !empty($siteUp['result'])) {
 
 							$siteFeed = getDateSiteAlternativeLink($siteUp['result'],$url);
 
@@ -241,14 +207,25 @@ function getHackerspacesOrgJson() {
 					if (isset($space['printouts']['Wiki'][0])) {
 						$hackerspaceWiki = $space['printouts']['Wiki'][0];
 						$checkDate['wiki'] = getDateLastWikiEdit($hackerspaceWiki);
-
 						message('Wiki '.$checkDate['wiki'].' - '.$space['printouts']['Wiki'][0]);
 					}
 
-					//check twitter
+					//check twitter, not usable since Musk took over
+					// if (isset($space['printouts']['Twitter'][0])) {
+					// 	$checkDate['twitter'] = getDateLastTweet($space['printouts']['Twitter'][0] );
+					// 	message('Twitter '.$checkDate['twitter'].' - '.$space['printouts']['Twitter'][0]);
+					// }
+
+					//check twitter via nitter
 					if (isset($space['printouts']['Twitter'][0])) {
-						$checkDate['twitter'] = getDateLastTweet($space['printouts']['Twitter'][0] );
-						message('Twitter '.$checkDate['twitter'].' - '.$space['printouts']['Twitter'][0]);
+						$checkDate['twitter'] = getDateLastTweetNitter($space['printouts']['Twitter'][0] );
+						message('Twitter/nitter '.$checkDate['twitter'].' - '.$space['printouts']['Twitter'][0]);
+					}
+
+					//check Fediverse/Mastadon
+					if (isset($space['printouts']['Fediverse'][0])) {
+						$checkDate['fediverse'] = getDateLastFediverse($space['printouts']['Fediverse'][0] );
+						message('Fediverse '.$checkDate['fediverse'].' - '.$space['printouts']['Fediverse'][0]);
 					}
 
 					//check spaceAPI
@@ -275,7 +252,7 @@ function getHackerspacesOrgJson() {
 						message('Calenderfeed '.$checkDate['calender'].' - '.$space['printouts']['CalendarFeed'][0]);
 					}
 
-					//TODO facebook
+					//placeholder for facebook check
 
 					//check if lon/lat is within normal range
 					if (isset($space['printouts']['Location'][0])) {
@@ -287,7 +264,6 @@ function getHackerspacesOrgJson() {
 							//sendErrorLonLatEmail($email, $fullname, $url, $location);
 						}
 					};
-
 
 					//do all the check
 					$lastUpdateDate = 0;
@@ -335,7 +311,7 @@ function getHackerspacesOrgJson() {
 						if (count($result)>0) {
 							$string = '';
 							foreach ($result as $value) {
-								$string .= $value['lastdataupdated'].' ( Error '.$value['lastcurlerror'].'), ';
+								$string .= $value[''].' ( Error '.$value['lastcurlerror'].'), ';
 							}
 							message('Site down, checked on dates : ' . $string);
 							if (count($result)>3) {
@@ -384,14 +360,13 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 	    $sorting = 'asc';    	
     };
 
-    //replace $req_results, $offset, $wikiDate, $sorting
-    $wikiDate = date("d-20M-20Y",mktime(0, 0, 0, date("m"),   date("d"),   date("Y")-1));
-    $url = "https://wiki.hackerspaces.org/w/index.php?title=Special:Ask&x=-5B-5BCategory%3AHackerspace-5D-5D-20-5B-5BHackerspace-20status%3A%3Aactive-5D-5D-20-5B-5BHas-20coordinates%3A%3A%2B-5D-5D-20-5B-5BModification-20date%3A%3A%E2%89%A4$wikiDate-5D-5D%2F-3F-23%2F-3FModification-20date%2F-3FEmail%2F-3FWebsite%2F-3FWiki%2F-3FCity%2F-3FPhone%2F-3FNumber-20of-20members%2F-3FSpaceAPI%2F-3FLocation%2F-3FCalendarFeed%2F-3FNewsfeed%2F-3FTwitter%2F-3FFacebook%2F-3FEmail%2F-3FMailinglist&format=json&limit=$req_results&offset=$offset&link=all&headers=show&searchlabel=JSON&class=sortable+wikitable+smwtable&sort=Modification+date&order=$sorting&mainlabel=&prettyprint=true&unescape=true";
+    $wikiDate = date("d-20M-20Y",mktime(0, 0, 0, date("m"),   date("d")-11,   date("Y")));
+    $url = "https://wiki.hackerspaces.org/w/index.php?title=Special:Ask&x=-5B-5BCategory%3AHackerspace-5D-5D-20-5B-5BHackerspace-20status%3A%3Aactive-5D-5D-20-5B-5BHas-20coordinates%3A%3A%2B-5D-5D-20-5B-5BModification-20date%3A%3A%E2%89%A4$wikiDate-5D-5D%2F-3F-23%2F-3FModification-20date%2F-3FEmail%2F-3FWebsite%2F-3FWiki%2F-3FCity%2F-3FPhone%2F-3FNumber-20of-20members%2F-3FSpaceAPI%2F-3FLocation%2F-3FCalendarFeed%2F-3FNewsfeed%2F-3FTwitter%2F-3FFediverse%2F-3FFacebook%2F-3FEmail%2F-3FMailinglist&format=json&limit=$req_results&offset=$offset&link=all&headers=show&searchlabel=JSON&class=sortable+wikitable+smwtable&sort=Modification+date&order=$sorting&mainlabel=&prettyprint=true&unescape=true";
 
     $getWikiJsonResult = getJSON($url);
 
     if ($getWikiJsonResult['error']!=0){
-    	var_dump($getWikiJsonResult['json']);
+    	// var_dump($getWikiJsonResult['json']);
         message(' Error while get wiki json '.$getWikiJsonResult['error']);
         return null;
     }
@@ -401,28 +376,30 @@ function getPageHackerspacesOrg($req_results,$req_page) {
 
 
 function updateDatabase($wikiurl,$name ='',$lastcurlerror=0,$status='') {
-    global $database;
+	$db = MysqliDb::getInstance();
 
-    $result = $database->insert("wikispace", [
+	$data = array(
     	"wikiurl" =>$wikiurl,
     	"name" =>$name,
-        "lastdataupdated" => date("Y-m-d H:i:s"),
+        "lastdataupdated" => $db->now(),
         "lastcurlerror" => $lastcurlerror,
-        //"curlerrorcount" => $errorcount,
         "status" => $status, 
-    ]);
+	);
 
-    //echo "Database \n";
-    //print_r($result->rowCount());
+	if ($db->where("wikiurl",$wikiurl)->getOne("wikispace"))  {
+		$result = $db->update("wikispace", $data);
+	} else {
+		$result = $db->insert("wikispace", $data);
+	}
 
-    $errorlog = $database->error();
-    if ($errorlog[1] != 0) {
-        message('SqLite Error '.$errorlog[1]);
-        var_dump($errorlog);
-    };
 
-    return $database->select("wikispace",["@lastdataupdated","lastcurlerror"], ["wikiurl" =>$wikiurl]);
 
+
+	if ($db->getLastErrno() !== 0) {
+		echo 'Update failed. Error: '. $db->getLastError();
+	}
+
+    return $db->get("wikispace", "wikiurl = $wikiurl");
 };
 
 // Step 1: GET request to fetch login token
@@ -522,7 +499,7 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 		message('No hs wiki action defined!!',5);
 	}
 
-	$newpage .= "\n<!--- Checked by mappall.space bot.\n".$wikiMessage."\n-->";
+	$newpage .= "\n<!--- Checked by mappall.space bot on ".	date("Y-m-d H:i:s").".\n".$wikiMessage."\n-->";
 
 	$params = [
 		"action" => "edit",
@@ -537,9 +514,9 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 	$url = $wikiApi ;// . "?" . http_build_query( $params );
 	$result = getJSON($url,$params);
 
-	if (isset($result['json']['error']) or $result['json']['edit']['result']=='Failure') {
-		//var_dump( $result['json']['error']);
-	}
+	// if (isset($result['json']['error']) or $result['json']['edit']['result']=='Failure') {
+	// 	var_dump( $result['json']['error']);
+	// }
 
 	//solve captcha 
 	if ($result['json']['edit']['result']=='Failure' and isset($result['json']['edit']['captcha']) ) {
@@ -556,9 +533,9 @@ function updateHackerspaceWiki( $spaceURLname , $action ) {
 
 		$result = getJSON($url,$params);
 
-		if (isset($result['json']['error']) or $result['json']['edit']['result']=='Failure') {
-			//var_dump( $result);
-		};
+		// if (isset($result['json']['error']) or $result['json']['edit']['result']=='Failure') {
+		// 	var_dump( $result);
+		// };
 	}
 
 	//clear chache / purge
@@ -645,26 +622,88 @@ function getDataLastSpacaAPI($spaceapiurl) {
 		}
 }
 
-function getDateLastTweet($user) {
-	global $twitter;
+//no longer used since Must took over
+// function getDateLastTweet($user) {
+// 	global $twitter;
 
-	$tuser = @end(explode('/', $user));
+// 	$tuser = @end(explode('/', $user));
 
-	$url = 'https://api.twitter.com/1.1/statuses/user_timeline.json';
-	$getfield = "?screen_name=$tuser&count=1";
-	$requestMethod = 'GET';
+// 	$url = 'https://api.twitter.com/1.1/statuses/user_timeline.json';
+// 	$getfield = "?screen_name=$tuser&count=1";
+// 	$requestMethod = 'GET';
 
-	$result = json_decode($twitter->setGetfield($getfield)
-	             ->buildOauth($url, $requestMethod)
-	             ->performRequest(),JSON_OBJECT_AS_ARRAY);
+// 	$result = json_decode($twitter->setGetfield($getfield)
+// 	             ->buildOauth($url, $requestMethod)
+// 	             ->performRequest(),JSON_OBJECT_AS_ARRAY);
 
-	if(isset($result[0]['created_at']) or $tuser='') {
-		return date("Y-m-d H:i",strtotime($result[0]['created_at']));
-	} else {
-		return null; //timeline empty
+// 	if(isset($result[0]['created_at']) or $tuser='') {
+// 		return date("Y-m-d H:i",strtotime($result[0]['created_at']));
+// 	} else {
+// 		return null; //timeline empty
+// 	}
+
+// };
+
+function getDateLastTweetNitter($user) {
+	global $nitterhosts,$nitterworks;
+
+	if ($nitterworks =='') {
+		foreach($nitterhosts as $host) {
+			$result = getCurl($host.'tkkrlab/rss');
+			if ($result['error']==0) {
+				$nitterworks = $host;
+				echo 'Nitter up : '.$host;
+				break;
+			}
+		}
 	}
 
+	$tuser = substr(parse_url($user, PHP_URL_PATH),1);
+	$lastdate = 0;
+	$result = getCurl("$nitterworks$tuser/rss");
+	if ($result['error']==0) {
+		$xml = simplexml_load_string($result['result'],'SimpleXMLElement',LIBXML_NOCDATA|LIBXML_NOERROR);
+		$json = json_encode($xml);
+		$array = json_decode($json,TRUE);
+		foreach($array['channel']['item'] as $rssItem) {
+			if (isset($rssItem['pubDate'])) {
+				$rssDate = strtotime($rssItem['pubDate']);
+				if (empty($lastdate) or $rssDate > $lastdate) {
+					$lastdate = $rssDate;
+				}
+			} else {
+				echo "Error in feed $nitterworks$tuser\n";
+			}
+		}
+		return date("Y-m-d H:i:s",$lastdate);
+	} else {
+		return null;
+	}
 };
+
+function getDateLastFediverse($fediverse) {
+
+	$result = getCurl("$fediverse.rss");
+	if ($result['error']==0) {
+		$xml = simplexml_load_string($result['result']);
+		$json = json_encode($xml);
+		$array = json_decode($json,TRUE);
+		foreach($array['channel']['item'] as $rssItem) {
+			$rssDate = strtotime($rssItem['pubDate']);
+			if (empty($lastdate) or $rssDate > $lastdate) {
+				$lastdate = $rssDate;
+			}
+		}
+		echo "Datum voor $fediverse ".date("Y-m-d H:i:s",$lastdate)."\n";
+		return date("Y-m-d H:i:s",$lastdate);
+	} else {
+		return null;
+	}
+};
+
+
+
+
 
 function getDateLastWikiEdit($wiki) {
 	message('Wiki on '.$wiki);
@@ -680,22 +719,27 @@ function getDateLastWikiEdit($wiki) {
 
 function getDateNewsFeed($feed) {
 	$result = getCurl($feed);
-	if ( (substr($result['result'],0,4)=='<rss') or (substr($result['result'],0,5)=='<?xml') or (substr($result['result'],0,5)=='<feed')  ) {
-		$xml =simplexml_load_string($result['result'],'SimpleXMLElement',LIBXML_NOERROR);
-		//var_dump($xml);
-		if (!empty(strtotime($xml->channel->lastBuildDate))) {
-			return date("Y-m-d H:i",strtotime($xml->channel->lastBuildDate));
-		} elseif (!empty(strtotime($xml->channel->pubDate))) {
-			return date("Y-m-d H:i",strtotime($xml->channel->pubDate));
-		} elseif (!empty(strtotime($xml->entry->published))) {
-			return date("Y-m-d H:i",strtotime($xml->entry->published));	
-		} else {
-			return null;	
+
+	if (!empty($result['result']) && $result['error']==0) {
+
+		if (  (substr($result['result'],0,4)=='<rss') or (substr($result['result'],0,5)=='<?xml') or (substr($result['result'],0,5)=='<feed')  ) {
+			$xml = simplexml_load_string($result['result'],'SimpleXMLElement',LIBXML_NOERROR);
+	
+			if (!empty($xml->channel->lastBuildDate)) {
+				return date("Y-m-d H:i",strtotime($xml->channel->lastBuildDate[0]));
+			} elseif (!empty($xml->channel->pubDate)) {
+				return date("Y-m-d H:i",strtotime($xml->channel->pubDate[0]));
+			} elseif (!empty($xml->entry->published)) {
+				return date("Y-m-d H:i",strtotime($xml->entry->published[0]));	
+			} else {
+				return null;	
+			}
 		}
 	} else {
 		message('Newsfeed no RSS feed '.$feed.' Error :'.$result['error']);
 		return null;
 	}
+
 }
 
 function getDateLastMailManPost($mailinglist){
@@ -704,14 +748,19 @@ function getDateLastMailManPost($mailinglist){
 		$pos =strpos($mailinglist,'/mailman/listinfo/');
 		$mailman = substr($mailinglist,0,$pos).'/pipermail/'.substr($mailinglist,$pos+18);
 		$result = getCurl($mailman);
-		preg_match_all('/<td>(.*?)<\/td>/i', $result['result'], $matches, PREG_SET_ORDER, 0);
-		$lastArchive = substr($matches[3][0],4,-6);
-		$foundDate = strtotime($lastArchive);
+		if ($result['error']==0 && $result['result']) {
+			$foundDate=0;
+			preg_match_all('/<td>(.*?)<\/td>/i', $result['result'], $matches, PREG_SET_ORDER, 0);
+			if (isset($matches[3][0])){
+				$lastArchive = substr($matches[3][0],4,-6);
+				$foundDate = strtotime($lastArchive);	
+			}
 			if ($foundDate !=0 and $result['error']==0) {
 				return date("Y-m-d H:i",$foundDate);
 			} else {
 				return null;
 			}
+		}
 
 	} elseif(strpos($mailinglist,'groups.google.com')>0) {
 		//convert to https
@@ -725,11 +774,13 @@ function getDateLastMailManPost($mailinglist){
 			$googlefeed= str_replace('/#!forum/','/feed/',$mailinglist).'/msgs/rss_v2_0.xml?num=1';
 		}
 		$result = getCurl($googlefeed);
-		if (substr($result['result'],0,4)=='<rss')  {
-			$xml =simplexml_load_string($result['result'],'SimpleXMLElement',LIBXML_NOERROR);
-			return date("Y-m-d H:i",strtotime($xml->channel->item->pubDate));
-		} else {
-			return null;
+		if ($result['error']==0 && $result['result']) {
+			if (substr($result['result'],0,4)=='<rss')  {
+				$xml =simplexml_load_string($result['result'],'SimpleXMLElement',LIBXML_NOERROR);
+				return date("Y-m-d H:i",strtotime($xml->channel->item->pubDate));
+			} else {
+				return null;
+			}
 		}
 	} else {
 		return null;
@@ -738,47 +789,57 @@ function getDateLastMailManPost($mailinglist){
 
 function getDataLastCalenderFeed($ical) {
 	$result = getCurl($ical);
-	$file = str_getcsv($result['result'],"\n");
-    foreach ($file as $line) {
-    	//if calender dont have CREATED entrys
-    	if (substr($line,0,6)=='DTEND:') {
-			$foundEndDate = date("Y-m-d H:i",strtotime(substr($line,6)));
-    	}
-    	if ($foundEndDate > $lastEndDate) {
-    		$lastEndDate = $foundEndDate; 
-    	}
-
-    	if (substr($line,0,8)=='DTSTAMP:') {
-			$foundStampDate = date("Y-m-d H:i",strtotime(substr($line,8)));
-    	}
-    	if ($foundStampDate > $lastStampDate) {
-    		$lastStampDate = $foundStampDate; 
-    	}
-    }
-
-    if (isset($lastStampDate)) {
-	    return $lastStampDate;
-    } elseif(isset($lastEndDate)) {
-    	return $lastEndDate;
-    } else {
-	    return null;
-    }
-
+	if (!empty($result['result']) && $result['error'] == 0) {
+		$file = str_getcsv($result['result'],"\n");
+		$foundEndDate =	$foundStampDate = $lastStampDate= $lastEndDate = 0;
+		foreach ($file as $line) {
+			//if calender dont have CREATED entrys
+			if (substr($line,0,6)=='DTEND:') {
+				$foundEndDate = date("Y-m-d H:i",strtotime(substr($line,6)));
+			}
+			if ($foundEndDate > $lastEndDate) {
+				$lastEndDate = $foundEndDate; 
+			}
+	
+			if (substr($line,0,8)=='DTSTAMP:') {
+				$foundStampDate = date("Y-m-d H:i",strtotime(substr($line,8)));
+			}
+			if ($foundStampDate > $lastStampDate) {
+				$lastStampDate = $foundStampDate; 
+			}
+		}
+	
+		if (isset($lastStampDate)) {
+			return $lastStampDate;
+		} elseif(isset($lastEndDate)) {
+			return $lastEndDate;
+		} else {
+			return null;
+		}
+	
+	}
 }
 
 
 function getDateSiteAlternativeLink($site,$url) {
 	$checkDate = array();
 
+	return null;
+
+	if (empty($site)) {
+		return null;
+	}
+
 	libxml_use_internal_errors(true);
 	$DOMfile = new DomDocument();
 	$DOMfile->loadHTML($site);
 	$xml = simplexml_import_dom($DOMfile);
+	$generator = '';
 
 	//find generator
 	foreach ($xml->head->meta as $value) {
 		$array = (array)$value;
-		if ($array['@attributes']['name']=='generator') {
+		if (isset($array['@attributes']['name']) && $array['@attributes']['name']=='generator') {
 			$generator = $array['@attributes']['content'];
 		}
 	}
@@ -786,11 +847,11 @@ function getDateSiteAlternativeLink($site,$url) {
 	foreach ($xml->head->link as $value) {
 		$array = (array)$value;
 
-		if ($array['@attributes']['rel']=='alternate' and (
+		if (isset($array['@attributes']['type']) && ($array['@attributes']['rel']=='alternate'  && (
 				$array['@attributes']['type'] == 'application/rss+xml' or 
 				$array['@attributes']['type'] == 'application/atom+xml') or
 				$array['@attributes']['type'] == 'application/rsd+xml'
-			) {
+			)) {
 			$link = $array['@attributes']['href'];
 			if (substr($link,0,1)=='/') {
 				$link = $url.$link;
@@ -801,8 +862,6 @@ function getDateSiteAlternativeLink($site,$url) {
 
 				$wikiFeed = parse_url($link, PHP_URL_SCHEME).'://'.parse_url($link, PHP_URL_HOST).'/'.parse_url($link, PHP_URL_PATH);
 				$wikiFeed .= '?days=9999&limit=1&action=feedrecentchanges&feedformat=atom';
-
-				//$wikiFeed = substr($link,0,strpos($link, '?')).'?days=9999&limit=1&action=feedrecentchanges&feedformat=atom';
 				$result = getCurl($wikiFeed);
 				if ($result['error']==0) {
 					$feedRecentChanges = simplexml_load_string($result['result']);
@@ -868,18 +927,15 @@ function getDateSiteAlternativeLink($site,$url) {
 
 
 function sendEmail($email,$fullname,$url) {
-		if ($testrun) {
-			$email = 'dave@daveborghuis.nl';
-		}
 		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 			message("ERROR Sendmail : Email $email not valid",5);
 			return false;
 		}
 
-		$wikiMessage .= "Send email to : ". $email;
+		$wikiMessage = "Send email to : ". $email;
 
         $headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
-        $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More information about this proces can be found on <a href=\"https:\\\\mapall.space\\hswikilist.php\">Mapall site</a><br>Do not reply to this mail, it wil not be read.\nLog of our checks : \n$wikiMessage";
+        $mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has been changed. We asume that your hacerspace is no longer active. If this is not the case go to the wiki and change the status and add additional information if possible.<br>More information about this proces can be found on <a href=\"https:\\\\mapall.space\\hswikilist.php\">Mapall site</a><br>Do not reply to this mail, it wil not be read.\nLog of our checks : \n".$wikiMessage;
         $mailsend = mail( 
             $email,
             'Hackerspaces.org entry for '.$fullname ,
@@ -895,15 +951,15 @@ function sendEmail($email,$fullname,$url) {
 
 function sendErrorLonLatEmail($email, $fullname, $url, $location)
 {
-	if ($testrun) {
-		$email = 'dave@daveborghuis.nl';
-	}
+	// if ($testrun) {
+	// 	$email = 'dave@daveborghuis.nl';
+	// }
 	if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 		message("ERROR Sendmail : Email $email not valid", 5);
 		return false;
 	}
 
-	$wikiMessage .= "Send email to : " . $email;
+	// $wikiMessage = "Send email to : " . $email;
 
 	$headers = "From:Dave Borghuis <webmaster@mapall.space>\r\nMIME-Version: 1.0\r\nContent-type: text/html; charset=iso-8859-1";
 	$mailmessage = "Hello,<br>Wiki entry for <a href=\"$url\">$fullname</a> has incorrect location data. Probaly the longatude and latatude may be swaped. Please check this data and change it on your wiki page accordingly.";

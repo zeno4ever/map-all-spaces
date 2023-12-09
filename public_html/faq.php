@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <?php require '../private/init.php'; ?>
 <html lang="en-US">
-
+<?php
+function getFileDateTime(string $file) :string {
+	if (file_exists($file.'.json')) {
+		return date("F d Y H:i:s.",  filemtime($file.'.json')); 
+	} else {
+		return ' (file not found) ';
+	}
+}
+?>
 <head>
 	<link rel="stylesheet" href="/css/style.css" />
 	<meta name="Map hackerspaces/fablabs/makerspaces " content="Dynamic map with all hackerspace, fablabs and makerspaces">
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-2M9QVB70G3"></script>
+	<script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
 	<script>
 		window.dataLayer = window.dataLayer || [];
 
@@ -35,18 +41,18 @@
 				<ul>
 					<li><a href="https://spaceapi.io/directory/">SpaceApi</a> directory
 						<div>Read API directory and check every hackerspace json (if space is open or closed). Updated every hour. (Last update
-							<?php echo date("F d Y H:i:s.",  filemtime("./api.geojson")); ?>)</div>
+							<?php echo getFileDateTime("./api"); ?>)</div>
 					</li>
 					<li><a href="https://fablabs.io/">fablabs.oi</a> FabLab list
 						<div>Fablab should have status 'active'. Updated weekly. (Last update
-							<?php echo date("F d Y H:i:s.",  filemtime("./fablab.geojson")); ?>)</div>
+							<?php echo getFileDateTime("./fablab"); ?>)</div>
 					</li>
 					<li><a href="https://wiki.fablabs-quebec.org/">fablabs quebec</a> FabLab list
 						<div>Updated weekly. (Last update
-							<?php echo date("F d Y H:i:s.",  filemtime("./fablabq.geojson")); ?>)</div>
+							<?php echo getFileDateTime("./fablabq"); ?>)</div>
 					</li>
 					<li><a href="https://wiki.hackerspaces.org">hackerspace.org</a> semantic data<div>Only added to map when space is active, has more then 1 member and site is online. Extra check if a wiki entry is als added by API or Fablab, if so remove wiki entry from map. (Duplicate = 2 entrys are less then 200m apart and name match for 45% or more) Updated weekly. (Last update
-							<?php echo date("F d Y H:i:s.",  filemtime("./wiki.geojson")); ?>)</div>
+							<?php echo getFileDateTime("./wiki"); ?>)</div>
 					</li>
 				</ul>
 			</div>
