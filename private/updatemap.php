@@ -74,8 +74,9 @@ if (isset($cliOptions['comp']) or isset($cliOptions['all'])) {
 };
 
 if (isset($cliOptions['test'])) {
-    echo "TEST FUNCTIE ".PHP_EOL;
-    exit;
+    // getSpaceApi2();
+    // echo "TEST FUNCTIE ".PHP_EOL;
+    // exit;
 };
 
 
@@ -241,6 +242,7 @@ function updateSpaceHeatmap($space,$openstate,$status,$jsonUrl,$json) {
         'lns' => $open,
         "lat" => $lat,
         "lon" => $lon,
+        'name' => $space,
         'lastupdated' => $db->now(),
     );
 

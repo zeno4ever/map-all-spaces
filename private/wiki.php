@@ -22,8 +22,11 @@ if (php_sapi_name()=='cli') {
 	};
 
 	if (isset($cliOptions['init'])) {
-	    $db->delete('wikispace');
-	    echo('Init : database empty and logfile removed');
+	    $result = $db->delete('wikispace');
+		if ($db->getLastErrno() !=0) {
+			echo "SQL error : ".$db->getLastError();
+		}
+	    echo('Init : database empty');
 	};
 
 	//Have or live or test option. 

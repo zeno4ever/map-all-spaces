@@ -188,7 +188,10 @@
 			foreach ($counts as $d => $v) {
 			?>
 	</TR>
-	<TH><?php print $d; ?></TH><?php
+	<TH><?php
+	$dayArray = array('avg'=>'avg',1 => 'Sun',2 => 'Mon',3 => 'Tue'  ,4 => 'Wed' ,5 =>'Thu' ,6 =>'Fry' ,7=>'Sat');
+	print $dayArray[$d]; 
+	?></TH><?php
 	for ($h = 0; $h < 25; $h++) {
 		$c = $counts[$d][$h];
 
