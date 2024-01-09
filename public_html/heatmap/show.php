@@ -189,7 +189,7 @@
 			?>
 	</TR>
 	<TH><?php
-	$dayArray = array('avg'=>'avg',1 => 'Sun',2 => 'Mon',3 => 'Tue'  ,4 => 'Wed' ,5 =>'Thu' ,6 =>'Fry' ,7=>'Sat');
+	$dayArray = array('avg'=>'avg',1 => 'Sun',2 => 'Mon',3 => 'Tue'  ,4 => 'Wed' ,5 =>'Thu' ,6 =>'Fri' ,7=>'Sat');
 	print $dayArray[$d]; 
 	?></TH><?php
 	for ($h = 0; $h < 25; $h++) {
