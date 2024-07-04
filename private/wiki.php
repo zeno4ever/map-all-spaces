@@ -155,7 +155,7 @@ function getHackerspacesOrgJson() {
             message('Url = '.$url);
 
             //only check if no modification in last year
-            if ($interval > 356 ) { 
+            if ($interval > 365 ) { 
             	$statistics['total']+=1;
 
 				$email =  $space['printouts']['Email'][0]  ?? '';
