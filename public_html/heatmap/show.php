@@ -126,7 +126,7 @@
 	<H2>last month (31 days)</H2><?php
 		doit('SELECT DAYOFWEEK(tts) as dayofweek, HOUR(tts) as hour, SUM(open) / COUNT(*) AS open FROM (SELECT CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tts, open FROM ' . $table . ') AS i WHERE tts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 31 DAY) GROUP BY dayofweek, hour');
 		?><A NAME="jaar"></A>
-	<H2>this year (356 days)</H2><?php
+	<H2>this year (365 days)</H2><?php
 		doit('SELECT DAYOFWEEK(tts) as dayofweek, HOUR(tts) as hour, SUM(open) / COUNT(*) AS open FROM (SELECT CONVERT_TZ(ts, "SYSTEM", "' . $timezoneOffset . '") AS tts, open FROM ' . $table . ') AS i WHERE tts >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 365 DAY) GROUP BY dayofweek, hour');
 		?><A NAME="alles"></A>
 	<H2>everything</H2><?php
