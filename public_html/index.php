@@ -71,7 +71,11 @@
                 fillOpacity: 0,
                 weight: 6
             }).addTo(map);
-            map.setView(geopos, 13)
+            if (urlParams.has('z')) {
+                map.setView(geopos, urlParams.get('z'))
+            } else {
+                map.setView(geopos, 13)
+            }
         }
 
         //attributes for basemap credit (lower right hand corner annotation)
@@ -95,7 +99,7 @@
         };
 
         var masClusGroup = new L.markerClusterGroup({
-            disableClusteringAtZoom: <?php echo ( isset($_GET['mapzoom'])?$_GET['mapzoom']:"7") ?>, //good default 7, to disable 1 
+            disableClusteringAtZoom: <?php echo ( isset($_GET['clustzoom'])?$_GET['clustzoom']:"7") ?>, //good default 7, to disable 1 
             chunkedLoading: true
         }).addTo(map);
 
