@@ -36,6 +36,9 @@ function getFileDateTime(string $file) :string {
 			<h1>FAQ</h1>
 			<h2>What is this site?</h2>
 			<div>A dynamic map of all hacker/maker spaces and fablabs. There is already some maps out there, but you have to register. After a while the map wil be outdated, so for this map there are several 'live' sources used to be always up-to-date. </div>
+						<br>
+			<h2>Can I make the zoomlevel dynamic?</h2>
+			<div>If you include the url parameter 'mapzoom=x' where x is the value you want to use. Default (or no parameter) is 7. Use 1 to disable the zoomleven (and show ALL icons) </div>
 			<h2>What sources are used?</h2>
 			<div>There are tree main sources of data :
 				<ul>
