@@ -95,7 +95,7 @@
         };
 
         var masClusGroup = new L.markerClusterGroup({
-            disableClusteringAtZoom: 7, //good default 7, to disable 1 
+            disableClusteringAtZoom: <?php echo ( isset($_GET['mapzoom'])?$_GET['mapzoom']:"7") ?>, //good default 7, to disable 1 
             chunkedLoading: true
         }).addTo(map);
 
