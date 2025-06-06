@@ -71,7 +71,11 @@
                 fillOpacity: 0,
                 weight: 6
             }).addTo(map);
-            map.setView(geopos, 13)
+            if (urlParams.has('z')) {
+                map.setView(geopos, urlParams.get('z'))
+            } else {
+                map.setView(geopos, 13)
+            }
         }
 
         //attributes for basemap credit (lower right hand corner annotation)
