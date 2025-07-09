@@ -346,7 +346,9 @@ function getFablabJson() {
     foreach ($getFablabJsonResult['json'] as $fablab ) {
         //echo "Updating ".$fablab['name'].PHP_EOL;
 
-        if ( $fablab['activity_status'] !='closed' && (isset($fablab['latitude']) || isset($fablab['longitude'])) ) { 
+       // if ( $fablab['activity_status'] !='closed' && (isset($fablab['latitude']) || isset($fablab['longitude'])) ) { 
+        if ( $fablab['activity_status'] =='active' && (isset($fablab['latitude']) || isset($fablab['longitude'])) ) { 
+
             $id = $fablab['id'];
 
             $icon = '/image/fablab.png';
