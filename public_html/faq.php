@@ -63,6 +63,7 @@ function getFileDateTime(string $file) :string {
 					</li>
 				</ul>
 			</div>
+			Each space is polled 6 times per hour (every 10 minutes).<br>
 			Every 1th of the month the temporary database and logfiles are removed and fill again from the sources.<br>
 			If a site couldn't load (http error etc.) it will retry in increasingly delays, first after 4 hours, then 1 day, 4 days, 8 days. If after 8 days the site still couldn't read it will be skipped till 1th of next month.
 			Still don't see why your site is not included? Check our <a href="/errorlog.txt">error log</a> if we encountered some kind of error.
