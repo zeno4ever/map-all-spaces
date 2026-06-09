@@ -170,7 +170,7 @@
                                 "<a href='" + feature.properties.url + "' target='_blank' >website</a>  " +
                                 "<a href='" + feature.properties.source + "' target='_blank' >source</a>  "
                             if (type == 'api') {
-                                html += "<a href='/heatmap/show.php?id=" + feature.properties.name + "' target='_blank' >heatmap</a>"
+                                html += "<a href='/heatmap/show.php?id=" + encodeURIComponent(feature.properties.name) + "' target='_blank' >heatmap</a>"
                             }
                             layer.bindPopup(html).addTo(geolayer);
                         };
